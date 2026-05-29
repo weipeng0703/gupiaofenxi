@@ -1,0 +1,26 @@
+name: 多指标共振买入
+description: "RSI超卖 + KDJ金叉 + 价格突破MA20，三重确认买入信号"
+signal_type: BUY
+conditions:
+  - type: threshold
+    indicator: rsi
+    params:
+      value: 35
+      direction: below
+  - type: cross
+    indicator: kdj_k
+    ref_indicator: kdj_d
+    params:
+      direction: up
+      lookback: 3
+  - type: price_vs_ma
+    ma_period: 20
+    params:
+      direction: above
+confidence_weights:
+  - indicator: rsi
+    weight: 0.3
+  - indicator: kdj
+    weight: 0.4
+  - indicator: ma
+    weight: 0.3

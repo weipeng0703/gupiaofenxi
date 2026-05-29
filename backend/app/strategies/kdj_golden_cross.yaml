@@ -1,0 +1,36 @@
+name: KDJ金叉买入
+description: "K线从下方穿越D线（金叉），且J值大于0确认非深度超卖"
+signal_type: BUY
+conditions:
+  - type: cross
+    indicator: kdj_k
+    ref_indicator: kdj_d
+    params:
+      direction: up
+      lookback: 2
+  - type: threshold
+    indicator: kdj_j
+    params:
+      value: 0
+      direction: above
+confidence_weights:
+  - indicator: kdj_k
+    weight: 0.4
+  - indicator: kdj_j
+    weight: 0.4
+---
+name: KDJ死叉卖出
+description: "K线从上方穿越D线（死叉），且J值小于100确认非深度超买"
+signal_type: SELL
+conditions:
+  - type: cross
+    indicator: kdj_k
+    ref_indicator: kdj_d
+    params:
+      direction: down
+      lookback: 2
+  - type: threshold
+    indicator: kdj_j
+    params:
+      value: 100
+      direction: below

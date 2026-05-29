@@ -1,0 +1,10 @@
+fastapi>=0.104
+uvicorn[standard]>=0.24
+sqlalchemy>=2.0
+aiosqlite>=0.19
+akshare>=1.10
+pandas>=2.1
+pydantic>=2.5
+pydantic-settings>=2.1
+pyyaml>=6.0
+python-dotenv>=1.0

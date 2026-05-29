@@ -1,0 +1,12 @@
+name: MA20突破买入
+description: "价格突破MA20均线，且成交量放大确认突破有效"
+signal_type: BUY
+conditions:
+  - type: price_vs_ma
+    ma_period: 20
+    params:
+      direction: above
+  - type: volume_confirm
+    params:
+      ratio: 1.5
+      avg_days: 5

@@ -1,0 +1,25 @@
+name: RSI超卖反弹
+description: "RSI低于30时发出买入信号，RSI高于70时发出卖出信号"
+signal_type: BUY
+conditions:
+  - type: threshold
+    indicator: rsi
+    params:
+      value: 30
+      direction: below
+confidence_weights:
+  - indicator: rsi
+    weight: 0.6
+---
+name: RSI超买卖出
+description: "RSI高于70时发出卖出信号"
+signal_type: SELL
+conditions:
+  - type: threshold
+    indicator: rsi
+    params:
+      value: 70
+      direction: above
+confidence_weights:
+  - indicator: rsi
+    weight: 0.6
