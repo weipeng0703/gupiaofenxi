@@ -1,5 +1,7 @@
 """AKShare 数据源实现 — A 股行情获取"""
 import asyncio
+import json
+import os
 import time
 import logging
 from datetime import datetime
@@ -12,7 +14,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# AKShare period 参数映射：前端用 "daily"/"weekly" 等，AKShare 用不同格式
+# AKShare period 参数映射
 PERIOD_MAP = {
     "daily": "daily",
     "weekly": "weekly",
@@ -23,6 +25,26 @@ PERIOD_MAP = {
     "5min": "5",
     "1min": "1",
 }
+
+# 预加载的股票列表（从 JSON 文件读取，搜索时优先使用）
+_STOCK_LIST: list[dict] | None = None
+
+
+def _load_stock_list() -> list[dict]:
+    """从 JSON 文件加载股票列表"""
+    global _STOCK_LIST
+    if _STOCK_LIST is not None:
+        return _STOCK_LIST
+
+    json_path = os.path.join(os.path.dirname(__file__), "data", "stock_list.json")
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            _STOCK_LIST = json.load(f)
+        logger.info(f"从 JSON 加载了 {len(_STOCK_LIST)} 只股票")
+    except Exception as e:
+        logger.warning(f"加载股票列表 JSON 失败: {e}")
+        _STOCK_LIST = []
+    return _STOCK_LIST
 
 
 class AKShareSource(DataSourceInterface):
@@ -157,8 +179,23 @@ class AKShareSource(DataSourceInterface):
             return []
 
     async def search_stock(self, keyword: str) -> list[dict]:
-        """从 spot_em 数据中按代码或名称搜索"""
-        # 尝试获取全市场数据来搜索
+        """搜索股票 — 优先从本地 JSON 列表搜索，失败时再尝试 AKShare"""
+        # 优先使用本地预加载的股票列表
+        local_list = _load_stock_list()
+        if local_list:
+            keyword_lower = keyword.lower()
+            results = []
+            for stock in local_list:
+                code = stock["stock_code"].lower()
+                name = stock["stock_name"].lower()
+                if keyword_lower in code or keyword_lower in name:
+                    results.append(stock)
+                    if len(results) >= 20:
+                        break
+            if results:
+                return results
+
+        # 本地列表无结果或加载失败，尝试 AKShare
         try:
             async with self._realtime_lock:
                 if self._spot_cache is not None and (time.monotonic() - self._spot_cache_time) < 300:
@@ -171,7 +208,6 @@ class AKShareSource(DataSourceInterface):
                     self._spot_cache_time = time.monotonic()
                     self._last_realtime_call = time.monotonic()
 
-            # 模糊匹配代码或名称
             mask = df["代码"].str.contains(keyword, na=False) | df["名称"].str.contains(keyword, na=False)
             matches = df[mask].head(20)
 
@@ -184,7 +220,7 @@ class AKShareSource(DataSourceInterface):
                 for _, row in matches.iterrows()
             ]
         except Exception as e:
-            logger.warning(f"搜索股票失败: {e}")
+            logger.warning(f"搜索股票失败(AKShare): {e}")
             return []
 
     @staticmethod
