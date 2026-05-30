@@ -36,7 +36,7 @@ def _load_stock_list() -> list[dict]:
     if _STOCK_LIST is not None:
         return _STOCK_LIST
 
-    json_path = os.path.join(os.path.dirname(__file__), "data", "stock_list.json")
+    json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "stock_list.json")
     try:
         with open(json_path, "r", encoding="utf-8") as f:
             _STOCK_LIST = json.load(f)
