@@ -1,6 +1,5 @@
 """应用配置 — 使用 Pydantic BaseSettings 管理"""
 import os
-from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -27,18 +26,14 @@ class Settings(BaseSettings):
     # 服务器
     host: str = "0.0.0.0"
     port: int = 8000
-    # CORS — 支持环境变量传入（逗号分隔字符串），默认本地开发
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:8000"]
+    # CORS — 存为字符串（逗号分隔），环境变量可直接传入，不会报解析错误
+    cors_origins: str = "http://localhost:5173,http://localhost:8000"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        """支持逗号分隔的字符串格式（从环境变量传入）"""
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+    def get_cors_origins_list(self) -> list[str]:
+        """将逗号分隔的 CORS 字符串转换为列表"""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     def get_abs_db_path(self) -> str:
         """将相对路径转换为绝对路径"""

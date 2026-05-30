@@ -37,7 +37,7 @@ app = FastAPI(title="gupiaofenxi", description="股票分析助手 API", lifespa
 # CORS — 允许前端开发服务器访问
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.get_cors_origins_list(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
