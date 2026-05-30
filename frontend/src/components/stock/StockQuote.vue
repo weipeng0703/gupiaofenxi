@@ -28,8 +28,8 @@ const props = defineProps<{
   quote: RealtimeQuote | null | undefined
 }>()
 
-const isUp = computed(() => props.quote?.change_pct > 0)
-const isDown = computed(() => props.quote?.change_pct < 0)
+const isUp = computed(() => props.quote?.change_pct != null && props.quote.change_pct > 0)
+const isDown = computed(() => props.quote?.change_pct != null && props.quote.change_pct < 0)
 </script>
 
 <style scoped>

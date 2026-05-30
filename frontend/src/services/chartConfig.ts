@@ -21,7 +21,7 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData)
 
   // 成交量数据 — 每条 [volume, color]
   const volumes = kline.map((k, i) => {
-    const prevClose = i > 0 ? kline[i - 1].close : k.open
+    const prevClose = i > 0 ? kline[i - 1]?.close ?? k.open : k.open
     return {
       value: k.volume,
       itemStyle: { color: getVolumeColor(k.close, prevClose) },
@@ -189,7 +189,7 @@ function formatTooltip(params: unknown, kline: KlinePoint[]): string {
   const p = params as Array<{ seriesName: string; dataIndex: number; value: unknown; axisValue: string }>
   if (!Array.isArray(p) || !p.length) return ''
 
-  const idx = p[0]?.dataIndex
+  const idx = p[0]?.dataIndex ?? 0
   const k = kline[idx]
   if (!k) return ''
 

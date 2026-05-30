@@ -41,7 +41,7 @@ function updateChart() {
       if (idx >= 0) {
         markPoints.push({
           name: `${signal.signal_type} ${signal.strategy_name}`,
-          coord: [signal.timestamp, signal.signal_type === 'BUY' ? props.kline[idx].low : props.kline[idx].high],
+          coord: [signal.timestamp, signal.signal_type === 'BUY' ? (props.kline[idx]?.low ?? 0) : (props.kline[idx]?.high ?? 0)],
           value: signal.signal_type,
           symbol: signal.signal_type === 'BUY' ? 'pin' : 'triangle',
           symbolSize: 30,
