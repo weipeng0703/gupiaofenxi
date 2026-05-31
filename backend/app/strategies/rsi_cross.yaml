@@ -1,0 +1,47 @@
+name: RSI金叉低吸
+description: "规则4：RSI6黑线垂直上升途中与黄线(RSI12)和紫线(RSI24)交叉，短期动能急剧转强，适合低吸"
+signal_type: BUY
+conditions:
+  - type: cross
+    indicator: rsi6
+    ref_indicator: rsi12
+    params:
+      direction: up
+      lookback: 2
+  - type: cross
+    indicator: rsi6
+    ref_indicator: rsi24
+    params:
+      direction: up
+      lookback: 2
+confidence_weights:
+  - indicator: rsi6
+    weight: 0.5
+  - indicator: rsi12
+    weight: 0.3
+  - indicator: rsi24
+    weight: 0.2
+---
+name: RSI死叉高抛
+description: "规则4：RSI6黑线垂直下降途中与黄线(RSI12)和紫线(RSI24)交叉，短期动能急剧转弱，应高抛"
+signal_type: SELL
+conditions:
+  - type: cross
+    indicator: rsi6
+    ref_indicator: rsi12
+    params:
+      direction: down
+      lookback: 2
+  - type: cross
+    indicator: rsi6
+    ref_indicator: rsi24
+    params:
+      direction: down
+      lookback: 2
+confidence_weights:
+  - indicator: rsi6
+    weight: 0.5
+  - indicator: rsi12
+    weight: 0.3
+  - indicator: rsi24
+    weight: 0.2

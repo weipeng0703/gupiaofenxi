@@ -18,7 +18,8 @@ class Settings(BaseSettings):
     ws_heartbeat_interval: int = 30             # WebSocket 心跳间隔（秒）
 
     # 技术指标默认参数
-    default_rsi_period: int = 14
+    rsi_periods: list[int] = [6, 12, 14, 24]     # RSI 多周期（含 RSI14 供策略引擎使用）
+    default_rsi_period: int = 14                # RSI 默认周期（策略引擎引用）
     default_kdj_period: int = 9
     default_kdj_smooth: int = 3
     ma_periods: list[int] = [5, 10, 20, 60]    # 默认显示的 MA 均线周期

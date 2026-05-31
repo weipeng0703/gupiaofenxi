@@ -1,9 +1,10 @@
 <template>
-  <div ref="chartContainer" class="kline-chart" :style="{ height: chartHeight }"></div>
+  <div ref="chartContainer" class="kline-chart"></div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useResizeObserver, useDebounceFn } from '@vueuse/core'
 import * as echarts from 'echarts'
 import type { KlinePoint, IndicatorData, SignalItem } from '@/types/stock'
 import { buildKlineOption } from '@/services/chartConfig'
@@ -12,11 +13,9 @@ const props = defineProps<{
   kline: KlinePoint[]
   indicators: IndicatorData
   signals?: SignalItem[]
-  height?: string
 }>()
 
 const chartContainer = ref<HTMLDivElement>()
-const chartHeight = ref(props.height || '600px')
 let chartInstance: echarts.ECharts | null = null
 
 /** 初始化 ECharts 实例 */
@@ -30,7 +29,8 @@ function initChart() {
 function updateChart() {
   if (!chartInstance || !props.kline.length) return
 
-  const option = buildKlineOption(props.kline, props.indicators)
+  const width = chartContainer.value?.clientWidth ?? 1024
+  const option = buildKlineOption(props.kline, props.indicators, width)
 
   // 如果有信号数据，在 K 线上添加买卖信号标注
   if (props.signals && props.signals.length) {
@@ -78,18 +78,22 @@ watch(() => [props.kline, props.indicators], () => {
   updateChart()
 }, { deep: true })
 
-/** 监听窗口大小变化 */
-function handleResize() {
+/** 容器尺寸变化 → resize，加 100ms debounce */
+const debouncedResize = useDebounceFn(() => {
   chartInstance?.resize()
-}
+  // 宽度变化后需要重新计算 grid 偏移
+  if (props.kline.length) {
+    updateChart()
+  }
+}, 100)
 
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', handleResize)
+  // 用 ResizeObserver 替代 window resize，响应容器级变化
+  useResizeObserver(chartContainer, debouncedResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
   chartInstance?.dispose()
   chartInstance = null
 })
@@ -98,6 +102,19 @@ onUnmounted(() => {
 <style scoped>
 .kline-chart {
   width: 100%;
+  flex: 1;
   min-height: 500px;
+}
+
+@media (max-width: 768px) {
+  .kline-chart {
+    min-height: 300px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .kline-chart {
+    min-height: 400px;
+  }
 }
 </style>

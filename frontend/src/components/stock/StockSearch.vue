@@ -3,7 +3,7 @@
     <input
       v-model="keyword"
       class="search-input"
-      placeholder="输入股票代码或名称搜索..."
+      placeholder="输入股票代码或名称..."
       @input="onInput"
       @keydown.enter="doSearch"
     />
@@ -49,7 +49,6 @@ async function doSearch() {
 }
 
 function onInput() {
-  // 输入时隐藏之前的搜索结果
   showResults.value = false
 }
 
@@ -65,30 +64,43 @@ function selectStock(stock: StockSearchResult) {
 .stock-search {
   position: relative;
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
+  flex: 1;
+  min-width: 0;
 }
 
 .search-input {
-  width: 200px;
-  padding: 6px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  flex: 1;
+  min-width: 0;
+  max-width: 200px;
+  padding: 6px var(--spacing-sm);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
 }
 
 .search-btn {
-  padding: 6px 16px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fff;
+  padding: 6px var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .search-btn:hover {
-  background: #ef232a;
-  color: #fff;
-  border-color: #ef232a;
+  background: var(--stock-up);
+  color: var(--bg-primary);
+  border-color: var(--stock-up);
 }
 
 .search-results {
@@ -96,35 +108,36 @@ function selectStock(stock: StockSearchResult) {
   top: 100%;
   left: 0;
   right: 0;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
   max-height: 300px;
   overflow-y: auto;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .result-item {
   display: flex;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .result-item:hover {
-  background: #f5f5f5;
+  background: var(--bg-hover);
 }
 
 .result-item .code {
-  color: #ef232a;
+  color: var(--stock-up);
   font-weight: bold;
-  font-size: 14px;
+  font-size: var(--font-size-base);
+  font-family: var(--font-mono);
 }
 
 .result-item .name {
-  color: #333;
-  font-size: 14px;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
 }
 </style>

@@ -1,58 +1,116 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* ── 主题 Token 系统 ── */
+
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  /* 股市配色 — 中国惯例：红涨绿跌 */
+  --stock-up: #ef232a;
+  --stock-down: #14b143;
+  --stock-flat: #999999;
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  /* 表面 / 背景 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f8fa;
+  --bg-sidebar: #fafbfc;
+  --bg-hover: #eef0f4;
+  --bg-active: #e3e6eb;
+  --bg-up-tint: rgba(239, 35, 42, 0.06);
+  --bg-down-tint: rgba(20, 177, 67, 0.06);
+  --bg-overlay: rgba(0, 0, 0, 0.4);
 
-  --vt-c-indigo: #2c3e50;
+  /* 边框 */
+  --border-primary: #e8eaed;
+  --border-light: #f0f1f3;
+  --border-focus: #ef232a;
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  /* 文字 */
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a5568;
+  --text-muted: #a0aec0;
+  --text-up: #ef232a;
+  --text-down: #14b143;
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* 字体 */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 28px;
+
+  /* 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* 布局尺寸 */
+  --sidebar-left-width: 280px;
+  --sidebar-right-width: 260px;
+  --header-height: 48px;
+  --mobile-tab-height: 56px;
 }
 
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
+/* ── 响应式宽度调整 ── */
 
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
-
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
-
-  --section-gap: 160px;
-}
-
-@media (prefers-color-scheme: dark) {
+@media (max-width: 768px) {
   :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
+    --sidebar-left-width: 0;
+    --sidebar-right-width: 0;
+    --spacing-md: 12px;
+    --font-size-xl: 22px;
+    --header-height: 44px;
   }
 }
 
-*,
-*::before,
-*::after {
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --sidebar-left-width: 0;
+    --sidebar-right-width: 0;
+  }
+}
+
+/* ── 暗色模式 ── */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #12141d;
+    --bg-secondary: #1a1e2b;
+    --bg-sidebar: #151926;
+    --bg-hover: #252a3a;
+    --bg-active: #2d3348;
+    --bg-up-tint: rgba(239, 35, 42, 0.12);
+    --bg-down-tint: rgba(20, 177, 67, 0.12);
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+
+    --border-primary: #2d3348;
+    --border-light: #252a3a;
+    --border-focus: #ef232a;
+
+    --text-primary: #e8eaed;
+    --text-secondary: #a0aec0;
+    --text-muted: #718096;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ── 全局 Reset ── */
+
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   font-weight: normal;
@@ -60,26 +118,11 @@
 
 body {
   min-height: 100vh;
-  color: var(--color-text);
-  background: var(--color-background);
-  transition:
-    color 0.5s,
-    background-color 0.5s;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
   line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  font-size: 15px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

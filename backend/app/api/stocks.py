@@ -52,7 +52,7 @@ async def get_stock_full(
     if not raw_kline:
         return StockFullResponse(
             stock_code=stock_code, stock_name="", period=period,
-            kline=[], indicators=IndicatorData(ma={}, rsi=[], kdj={"K": [], "D": [], "J": []}),
+            kline=[], indicators=IndicatorData(ma={}, rsi={}, kdj={"K": [], "D": [], "J": []}),
             signals=[],
         )
 

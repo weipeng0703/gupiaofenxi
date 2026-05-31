@@ -55,8 +55,11 @@ class IndicatorCalculator:
             series = cls.calc_ma(close, period)
             ma[f"MA{period}"] = series.tolist()
 
-        # RSI
-        rsi = cls.calc_rsi(close, settings.default_rsi_period).tolist()
+        # RSI — 多周期
+        rsi = {}
+        for period in settings.rsi_periods:
+            series = cls.calc_rsi(close, period)
+            rsi[f"RSI{period}"] = series.tolist()
 
         # KDJ
         kdj = cls.calc_kdj(df["high"], df["low"], close, n=9)

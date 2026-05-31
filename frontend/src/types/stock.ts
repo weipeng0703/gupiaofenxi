@@ -14,7 +14,7 @@ export interface KlinePoint {
 
 export interface IndicatorData {
   ma: Record<string, (number | null)[]>   // { "MA5": [...], "MA10": [...], ... }
-  rsi: (number | null)[]
+  rsi: Record<string, (number | null)[]>  // { "RSI6": [...], "RSI12": [...], "RSI24": [...] }
   kdj: {
     K: (number | null)[]
     D: (number | null)[]

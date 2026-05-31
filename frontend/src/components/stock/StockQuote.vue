@@ -1,7 +1,9 @@
 <template>
   <div v-if="quote" class="stock-quote" :class="{ up: isUp, down: isDown }">
-    <div class="stock-name">{{ quote.stock_name }}</div>
-    <div class="stock-code">{{ quote.stock_code }}</div>
+    <div class="quote-header">
+      <div class="stock-name">{{ quote.stock_name }}</div>
+      <div class="stock-code">{{ quote.stock_code }}</div>
+    </div>
     <div class="price-main">{{ formatPrice(quote.price) }}</div>
     <div class="change-info">
       <span class="change-pct">{{ formatChange(quote.change_pct) }}</span>
@@ -34,79 +36,95 @@ const isDown = computed(() => props.quote?.change_pct != null && props.quote.cha
 
 <style scoped>
 .stock-quote {
-  padding: 12px 16px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid #eee;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .stock-quote.up {
-  border-color: #ef232a;
-  background: rgba(239, 35, 42, 0.05);
+  border-color: var(--stock-up);
+  background: var(--bg-up-tint);
 }
 
 .stock-quote.down {
-  border-color: #14b143;
-  background: rgba(20, 177, 67, 0.05);
+  border-color: var(--stock-down);
+  background: var(--bg-down-tint);
+}
+
+.quote-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
 }
 
 .stock-name {
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .stock-code {
-  font-size: 12px;
-  color: #999;
-  margin-top: 2px;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
 }
 
 .price-main {
-  font-size: 28px;
+  font-size: var(--font-size-xl);
   font-weight: bold;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
+  font-family: var(--font-mono);
 }
 
 .stock-quote.up .price-main {
-  color: #ef232a;
+  color: var(--text-up);
 }
 
 .stock-quote.down .price-main {
-  color: #14b143;
+  color: var(--text-down);
 }
 
 .change-info {
   display: flex;
-  gap: 12px;
-  margin-top: 4px;
-  font-size: 14px;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-base);
+  font-family: var(--font-mono);
 }
 
 .stock-quote.up .change-info {
-  color: #ef232a;
+  color: var(--text-up);
 }
 
 .stock-quote.down .change-info {
-  color: #14b143;
+  color: var(--text-down);
 }
 
 .quote-details {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #666;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
 }
 
 .detail-item {
   padding: 2px 0;
 }
 
+@media (max-width: 768px) {
+  .quote-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .empty {
   text-align: center;
-  color: #999;
-  padding: 20px;
+  color: var(--text-muted);
+  padding: var(--spacing-lg);
 }
 </style>

@@ -65,114 +65,120 @@ async function onMarkRead(signal: SignalItem) {
 
 <style scoped>
 .signal-panel {
-  background: #fafafa;
-  border-left: 1px solid #eee;
+  background: var(--bg-sidebar);
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .panel-header h3 {
-  font-size: 16px;
+  font-size: var(--font-size-md);
   margin: 0;
+  color: var(--text-primary);
 }
 
 .badge {
-  background: #ef232a;
-  color: #fff;
+  background: var(--stock-up);
+  color: var(--bg-primary);
   border-radius: 10px;
   padding: 2px 8px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   font-weight: bold;
 }
 
 .signal-list {
   overflow-y: auto;
+  flex: 1;
 }
 
 .signal-item {
   display: flex;
   gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-light);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .signal-item:hover {
-  background: #f0f0f0;
+  background: var(--bg-hover);
 }
 
 .signal-item.unread {
-  background: #fff9f0;
+  background: var(--bg-up-tint);
 }
 
 .signal-icon {
-  font-size: 20px;
+  font-size: var(--font-size-lg);
   width: 30px;
   text-align: center;
+  font-weight: bold;
 }
 
 .signal-item.BUY .signal-icon {
-  color: #ef232a;
+  color: var(--stock-up);
 }
 
 .signal-item.SELL .signal-icon {
-  color: #14b143;
+  color: var(--stock-down);
 }
 
 .signal-content {
   flex: 1;
+  min-width: 0;
 }
 
 .signal-title {
   display: flex;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-base);
 }
 
 .signal-type.BUY {
-  color: #ef232a;
+  color: var(--text-up);
   font-weight: bold;
 }
 
 .signal-type.SELL {
-  color: #14b143;
+  color: var(--text-down);
   font-weight: bold;
 }
 
 .signal-stock {
-  color: #333;
+  color: var(--text-primary);
   font-weight: bold;
 }
 
 .signal-strategy {
-  font-size: 12px;
-  color: #666;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
 .signal-detail {
-  font-size: 12px;
-  color: #999;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
   margin-top: 2px;
+  font-family: var(--font-mono);
 }
 
 .signal-time {
-  font-size: 11px;
-  color: #bbb;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
 .empty {
   text-align: center;
-  padding: 40px;
-  color: #999;
+  padding: var(--spacing-xl);
+  color: var(--text-muted);
 }
 </style>

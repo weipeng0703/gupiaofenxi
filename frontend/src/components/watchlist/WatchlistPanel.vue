@@ -75,108 +75,119 @@ async function onRemove(id: number) {
 <style scoped>
 .watchlist-panel {
   padding: 0;
-  border-right: 1px solid #eee;
-  background: #fafafa;
+  background: var(--bg-sidebar);
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .panel-header h3 {
-  font-size: 16px;
+  font-size: var(--font-size-md);
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .watchlist-items {
   overflow-y: auto;
+  flex: 1;
 }
 
 .watchlist-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 10px var(--spacing-md);
   cursor: pointer;
   transition: background 0.2s;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .watchlist-item:hover {
-  background: #f0f0f0;
+  background: var(--bg-hover);
 }
 
 .watchlist-item.active {
-  background: #e8e8e8;
-  border-left: 3px solid #ef232a;
+  background: var(--bg-active);
+  border-left: 3px solid var(--stock-up);
 }
 
 .item-main {
   display: flex;
   gap: 6px;
   flex: 1;
+  min-width: 0;
 }
 
 .item-name {
-  font-size: 14px;
-  color: #333;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
   font-weight: bold;
 }
 
 .item-code {
-  font-size: 12px;
-  color: #999;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
 }
 
 .item-quote {
   text-align: right;
+  flex-shrink: 0;
 }
 
 .item-price {
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: bold;
+  font-family: var(--font-mono);
 }
 
-.item-price.up { color: #ef232a }
-.item-price.down { color: #14b143 }
+.item-price.up { color: var(--text-up) }
+.item-price.down { color: var(--text-down) }
 
 .item-change {
-  font-size: 12px;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
 }
 
-.item-change.up { color: #ef232a }
-.item-change.down { color: #14b143 }
+.item-change.up { color: var(--text-up) }
+.item-change.down { color: var(--text-down) }
 
 .remove-btn {
   border: none;
   background: transparent;
-  color: #ccc;
+  color: var(--text-muted);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   padding: 2px 6px;
-  margin-left: 8px;
+  margin-left: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: color 0.2s;
 }
 
 .remove-btn:hover {
-  color: #ef232a;
+  color: var(--stock-up);
 }
 
 .loading {
   text-align: center;
-  padding: 20px;
-  color: #999;
+  padding: var(--spacing-lg);
+  color: var(--text-muted);
 }
 
 .empty {
   text-align: center;
-  padding: 40px 16px;
-  color: #999;
-  font-size: 14px;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--text-muted);
+  font-size: var(--font-size-base);
 }
 </style>

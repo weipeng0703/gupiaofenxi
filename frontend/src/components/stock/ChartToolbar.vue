@@ -40,51 +40,63 @@ function switchPeriod(period: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .period-group {
   display: flex;
-  gap: 4px;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
 }
 
 .period-btn {
-  padding: 4px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fff;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   transition: all 0.2s;
 }
 
 .period-btn:hover {
-  background: #f5f5f5;
+  background: var(--bg-hover);
 }
 
 .period-btn.active {
-  background: #ef232a;
-  color: #fff;
-  border-color: #ef232a;
+  background: var(--stock-up);
+  color: var(--bg-primary);
+  border-color: var(--stock-up);
 }
 
 .action-group {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .action-btn {
-  padding: 4px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fff;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--font-size-md);
   transition: all 0.2s;
 }
 
 .action-btn:hover {
-  background: #f0f0f0;
+  background: var(--bg-hover);
+}
+
+@media (max-width: 480px) {
+  .period-btn {
+    padding: 2px 6px;
+    font-size: var(--font-size-xs);
+  }
 }
 </style>

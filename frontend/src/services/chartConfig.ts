@@ -4,6 +4,20 @@ import type { KlinePoint, IndicatorData } from '@/types/stock'
 import { STOCK_COLORS, INDICATOR_COLORS, getStockColor, getVolumeColor } from '@/utils/colorUtils'
 
 /**
+ * 根据 containerWidth 计算 ECharts grid 偏移量
+ * 小屏幕用百分比避免 Y 轴标签溢出，大屏幕用像素保证精确对齐
+ */
+function getGridOffsets(containerWidth?: number) {
+  if (containerWidth && containerWidth <= 768) {
+    return { left: '12%', right: '8%' }
+  }
+  if (containerWidth && containerWidth <= 1024) {
+    return { left: 60, right: 30 }
+  }
+  return { left: 80, right: 40 }
+}
+
+/**
  * 构建 K 线四面板完整配置
  *
  * 面板布局：
@@ -12,8 +26,11 @@ import { STOCK_COLORS, INDICATOR_COLORS, getStockColor, getVolumeColor } from '@
  * - Grid 2: RSI 曲线 (14% 高度)
  * - Grid 3: KDJ 三线 (14% 高度)
  */
-export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData): EChartsOption {
+export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData, containerWidth?: number): EChartsOption {
   if (!kline.length) return {}
+
+  const offsets = getGridOffsets(containerWidth)
+  const isSmall = containerWidth && containerWidth <= 768
 
   const dates = kline.map((k) => k.date)
   // ECharts candlestick 数据格式: [open, close, low, high]
@@ -51,37 +68,56 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData)
     }
   }
 
-  // 信号标记 — 在 K 线上标注买卖信号点
-  const signalMarkPoints: Record<string, unknown[]> = { buy: [], sell: [] }
-  // (此处留空，信号数据将通过 store 动态注入)
+  // RSI 多周期线数据
+  const rsiSeries: EChartsOption['series'] = []
+  const rsiColors: Record<string, string> = {
+    RSI6: '#2d2d2d',    // 黑线 — 短周期最灵敏，快速线
+    RSI12: '#f59e0b',   // 黄线 — 中周期
+    RSI24: '#8b5cf6',   // 紫线 — 长周期最平滑
+  }
+  if (indicators.rsi) {
+    for (const [name, data] of Object.entries(indicators.rsi)) {
+      rsiSeries.push({
+        name,
+        type: 'line',
+        data,
+        xAxisIndex: 2,
+        yAxisIndex: 2,
+        smooth: true,
+        showSymbol: false,
+        lineStyle: { width: 1.5, color: rsiColors[name] || '#aaa' },
+      })
+    }
+  }
 
   const option: EChartsOption = {
     animation: false, // 大数据集性能优化
     legend: {
-      data: ['K线', ...Object.keys(indicators.ma || {}), '成交量', 'RSI', 'K', 'D', 'J'],
+      data: ['K线', ...Object.keys(indicators.ma || {}), '成交量', ...Object.keys(indicators.rsi || {}), 'K', 'D', 'J'],
       top: 5,
-      left: 80,
+      left: offsets.left,
+      textStyle: { fontSize: isSmall ? 9 : 12 },
     },
     axisPointer: {
       link: [{ xAxisIndex: [0, 1, 2, 3] }], // 四面板 x 轴联动
     },
     grid: [
-      { left: 80, right: 40, top: 40, height: '45%' },         // K 线 + MA
-      { left: 80, right: 40, top: '55%', height: '14%' },       // 成交量
-      { left: 80, right: 40, top: '72%', height: '12%' },       // RSI
-      { left: 80, right: 40, top: '87%', height: '11%' },       // KDJ
+      { left: offsets.left, right: offsets.right, top: 40, height: '45%' },         // K 线 + MA
+      { left: offsets.left, right: offsets.right, top: '55%', height: '14%' },       // 成交量
+      { left: offsets.left, right: offsets.right, top: '72%', height: '12%' },       // RSI
+      { left: offsets.left, right: offsets.right, top: '87%', height: '11%' },       // KDJ
     ],
     xAxis: [
       { type: 'category', data: dates, gridIndex: 0, axisLabel: { show: false }, axisTick: { show: false } },
       { type: 'category', data: dates, gridIndex: 1, axisLabel: { show: false }, axisTick: { show: false } },
       { type: 'category', data: dates, gridIndex: 2, axisLabel: { show: false }, axisTick: { show: false } },
-      { type: 'category', data: dates, gridIndex: 3, axisLabel: { show: true, fontSize: 10 } },
+      { type: 'category', data: dates, gridIndex: 3, axisLabel: { show: true, fontSize: isSmall ? 9 : 10 } },
     ],
     yAxis: [
-      { type: 'value', gridIndex: 0, scale: true, splitLine: { show: true } },           // 价格
-      { type: 'value', gridIndex: 1, splitNumber: 2, axisLabel: { show: true, fontSize: 10 } }, // 成交量
-      { type: 'value', gridIndex: 2, min: 0, max: 100, splitNumber: 4, axisLabel: { fontSize: 10 } }, // RSI
-      { type: 'value', gridIndex: 3, axisLabel: { fontSize: 10 } },                       // KDJ
+      { type: 'value', gridIndex: 0, scale: true, splitLine: { show: true }, axisLabel: { fontSize: isSmall ? 9 : 10 } },
+      { type: 'value', gridIndex: 1, splitNumber: 2, axisLabel: { show: true, fontSize: isSmall ? 9 : 10 } },
+      { type: 'value', gridIndex: 2, min: 0, max: 100, splitNumber: 4, axisLabel: { fontSize: isSmall ? 9 : 10 } },
+      { type: 'value', gridIndex: 3, axisLabel: { fontSize: isSmall ? 9 : 10 } },
     ],
     dataZoom: [
       {
@@ -94,7 +130,7 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData)
         type: 'slider',
         xAxisIndex: [0, 1, 2, 3],
         bottom: 5,
-        height: 20,
+        height: isSmall ? 15 : 20,
       },
     ],
     tooltip: {
@@ -128,22 +164,22 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData)
         yAxisIndex: 1,
         barWidth: '60%',
       },
-      // ── 面板 2: RSI ──
+      // ── 面板 2: RSI 多周期 ──
+      ...rsiSeries,
+      // RSI 超买超卖标记线（只在第一条 RSI 线上添加）
       {
-        name: 'RSI',
+        name: 'RSI超买超卖',
         type: 'line',
-        data: indicators.rsi,
+        data: [],
         xAxisIndex: 2,
         yAxisIndex: 2,
-        smooth: true,
-        showSymbol: false,
-        lineStyle: { color: INDICATOR_COLORS.rsi, width: 1.5 },
         markLine: {
           silent: true,
           lineStyle: { type: 'dashed', color: '#aaa' },
           data: [
-            { yAxis: 30, name: '超卖线(30)' },
-            { yAxis: 70, name: '超买线(70)' },
+            { yAxis: 20, name: '超卖线(20)' },
+            { yAxis: 50, name: '中轴线(50)' },
+            { yAxis: 80, name: '超买线(80)' },
           ],
         },
       },

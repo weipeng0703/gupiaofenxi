@@ -112,11 +112,18 @@ class StrategyEngine:
 
             # 指标值快照
             indicator_snapshot = {}
-            rsi_list = indicators.get("rsi", [])
+            rsi_dict = indicators.get("rsi", {})
             kdj = indicators.get("kdj", {})
             ma = indicators.get("ma", {})
-            if rsi_list and rsi_list[-1] is not None:
-                indicator_snapshot["rsi"] = rsi_list[-1]
+            # 策略引擎默认引用 RSI14（default_rsi_period）
+            rsi14 = rsi_dict.get("RSI14", [])
+            if rsi14 and rsi14[-1] is not None:
+                indicator_snapshot["rsi"] = rsi14[-1]
+            # 也快照 RSI6/12/24 供扩展使用
+            for p in [6, 12, 24]:
+                rsi_p = rsi_dict.get(f"RSI{p}", [])
+                if rsi_p and rsi_p[-1] is not None:
+                    indicator_snapshot[f"rsi{p}"] = rsi_p[-1]
             if kdj.get("K") and kdj["K"][-1] is not None:
                 indicator_snapshot["kdj_k"] = kdj["K"][-1]
                 indicator_snapshot["kdj_d"] = kdj["D"][-1] if kdj.get("D") else None
@@ -247,8 +254,16 @@ class StrategyEngine:
     def _get_latest_indicator_value(self, indicator_name: str, indicators: dict) -> float | None:
         """获取指标的最新值"""
         if indicator_name == "rsi":
-            rsi_list = indicators.get("rsi", [])
-            return rsi_list[-1] if rsi_list else None
+            # 默认取 RSI14（策略 YAML 中 rsi 指标指 RSI14）
+            rsi_dict = indicators.get("rsi", {})
+            rsi14 = rsi_dict.get("RSI14", [])
+            return rsi14[-1] if rsi14 else None
+        elif indicator_name.startswith("rsi") and indicator_name not in ("rsi"):
+            # 支持 rsi6 / rsi12 / rsi24 等精确周期
+            rsi_dict = indicators.get("rsi", {})
+            key = indicator_name.upper().replace("RSI", "RSI")
+            series = rsi_dict.get(key, [])
+            return series[-1] if series else None
         elif indicator_name.startswith("kdj_"):
             kdj_key = indicator_name.replace("kdj_", "").upper()
             kdj = indicators.get("kdj", {})
@@ -259,7 +274,13 @@ class StrategyEngine:
     def _get_indicator_series(self, indicator_name: str, indicators: dict) -> list:
         """获取指标的完整序列"""
         if indicator_name == "rsi":
-            return indicators.get("rsi", [])
+            rsi_dict = indicators.get("rsi", {})
+            rsi14 = rsi_dict.get("RSI14", [])
+            return rsi14 if rsi14 else []
+        elif indicator_name.startswith("rsi") and indicator_name not in ("rsi"):
+            rsi_dict = indicators.get("rsi", {})
+            series = rsi_dict.get(indicator_name.upper(), [])
+            return series if series else []
         elif indicator_name.startswith("kdj_"):
             kdj_key = indicator_name.replace("kdj_", "").upper()
             kdj = indicators.get("kdj", {})

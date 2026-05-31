@@ -18,7 +18,7 @@ class KlinePoint(BaseModel):
 
 class IndicatorData(BaseModel):
     ma: dict[str, list[float | None]]           # {"MA5": [...], "MA10": [...], ...}
-    rsi: list[float | None]
+    rsi: dict[str, list[float | None]]          # {"RSI6": [...], "RSI12": [...], "RSI24": [...]}
     kdj: dict[str, list[float | None]]          # {"K": [...], "D": [...], "J": [...]}
 
 
