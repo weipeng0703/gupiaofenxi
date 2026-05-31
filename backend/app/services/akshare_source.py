@@ -8,6 +8,7 @@ from datetime import datetime
 
 import akshare as ak
 import pandas as pd
+from curl_cffi import requests as curl_requests
 
 from app.services.data_source import DataSourceInterface
 from app.config import settings
@@ -24,6 +25,13 @@ PERIOD_MAP = {
     "15min": "15",
     "5min": "5",
     "1min": "1",
+}
+
+# 腾讯财经 K 线 period 映射
+TENCENT_PERIOD_MAP = {
+    "daily": "day",
+    "weekly": "week",
+    "monthly": "month",
 }
 
 # 预加载的股票列表（从 JSON 文件读取，搜索时优先使用）
@@ -76,6 +84,19 @@ class AKShareSource(DataSourceInterface):
         end_date: str | None = None,
         adjust: str = "qfq",
     ) -> list[dict]:
+        # 优先尝试 AKShare（东方财富接口）
+        result = await self._get_hist_kline_akshare(stock_code, period, start_date, end_date, adjust)
+        if result:
+            return result
+
+        # AKShare 失败时，用腾讯财经接口备用
+        logger.info(f"AKShare 获取K线失败，切换到腾讯财经接口: {stock_code}")
+        return await self._get_hist_kline_tencent(stock_code, period, start_date, end_date, adjust)
+
+    async def _get_hist_kline_akshare(
+        self, stock_code: str, period: str, start_date: str | None, end_date: str | None, adjust: str,
+    ) -> list[dict]:
+        """AKShare 方式获取 K 线（东方财富接口）"""
         ak_period = PERIOD_MAP.get(period, period)
 
         def _fetch():
@@ -90,11 +111,83 @@ class AKShareSource(DataSourceInterface):
 
         try:
             df = await asyncio.to_thread(_fetch)
-            # AKShare 返回中文列名，映射为英文
             df = self._normalize_hist_columns(df)
             return df.to_dict(orient="records")
         except Exception as e:
-            logger.warning(f"获取历史 K 线失败 {stock_code}: {e}")
+            logger.warning(f"AKShare 获取K线失败 {stock_code}: {e}")
+            return []
+
+    async def _get_hist_kline_tencent(
+        self, stock_code: str, period: str, start_date: str | None, end_date: str | None, adjust: str,
+    ) -> list[dict]:
+        """腾讯财经备用接口获取 K 线数据（用 curl_cffi 模拟浏览器）"""
+        # 确定市场前缀：0=深市，1=沪市
+        market_prefix = "sz" if stock_code.startswith(("0", "3")) else "sh"
+        tencent_period = TENCENT_PERIOD_MAP.get(period, "day")
+        # qfq=前复权, hfq=后复权
+        fq_type = "qfq" if adjust == "qfq" else ("hfq" if adjust == "hfq" else "")
+
+        def _fetch():
+            var_name = f"kline_{tencent_period}{fq_type}"
+            url = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
+            params = {
+                "_var": var_name,
+                "param": f"{market_prefix}{stock_code},{tencent_period},,,320,{fq_type}",
+            }
+            r = curl_requests.get(url, params=params, impersonate="chrome110", timeout=15)
+            if r.status_code != 200:
+                return []
+
+            text = r.text
+            if "=" in text:
+                json_str = text.split("=", 1)[1].strip()
+            else:
+                json_str = text
+
+            import json as _json
+            data = _json.loads(json_str)
+
+            # 提取K线数据
+            stock_data = data.get("data", {}).get(f"{market_prefix}{stock_code}", {})
+            if isinstance(stock_data, dict):
+                # day/qfqday/week/qfqweek 等
+                key = tencent_period if not fq_type else f"{fq_type}{tencent_period}"
+                klines_raw = stock_data.get(key, stock_data.get(tencent_period, []))
+            else:
+                klines_raw = []
+
+            # 转换为标准格式
+            # 腾讯格式: [date, open, close, high, low, volume]
+            result = []
+            for k in klines_raw:
+                try:
+                    result.append({
+                        "date": k[0],
+                        "open": float(k[1]),
+                        "close": float(k[2]),
+                        "high": float(k[3]),
+                        "low": float(k[4]),
+                        "volume": float(k[5]),
+                        "amount": 0,
+                    })
+                except (IndexError, ValueError):
+                    continue
+
+            # 按日期范围过滤
+            if start_date:
+                result = [r for r in result if r["date"] >= start_date]
+            if end_date:
+                result = [r for r in result if r["date"] <= end_date]
+
+            return result
+
+        try:
+            result = await asyncio.to_thread(_fetch)
+            if result:
+                logger.info(f"腾讯财经获取K线成功 {stock_code}: {len(result)}条")
+            return result
+        except Exception as e:
+            logger.warning(f"腾讯财经获取K线失败 {stock_code}: {e}")
             return []
 
     async def get_realtime_quote(self, stock_code: str) -> dict | None:
