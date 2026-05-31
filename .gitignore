@@ -37,6 +37,9 @@ desktop.ini
 .env
 .env.local
 
+# Local-only docs (deployment architecture with ngrok URLs etc.)
+DEPLOYMENT_ARCHITECTURE.md
+
 # Logs
 *.log
 logs/

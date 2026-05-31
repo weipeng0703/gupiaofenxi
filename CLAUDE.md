@@ -259,6 +259,26 @@ scripts/start.bat  # 启动
 - 前端 `api.ts` 中 baseURL 硬编码为 `http://localhost:8000/api`，生产部署需修改
 - WebSocket URL 硬编码为 `ws://localhost:8000/ws`，生产部署需修改
 
+## 部署架构
+
+> 详细部署架构文档见 `DEPLOYMENT_ARCHITECTURE.md`（本地文件，不上传 GitHub）
+
+| 组件 | 位置 | URL |
+|---|---|---|
+| 前端 | Vercel | https://gupiaofenxi-bmep.vercel.app |
+| 后端 | 本地电脑 | http://localhost:8000 |
+| 内网穿透 | ngrok | https://paving-regular-wifi.ngrok-free.dev |
+| 搜索数据 | 本地 JSON | 5525 只 A 股代码+名称 |
+| K线数据 | 腾讯财经（备用） | curl_cffi 模拟浏览器 |
+| 实时行情 | AKShare（东方财富） | 需交易时间+关闭代理 |
+
+关键配置：
+- 生产环境前端通过 ngrok 穿透访问本地后端（`.env.production` 配置 ngrok URL）
+- 开发环境通过 Vite 代理转发到 localhost:8000（`.env.development`）
+- CORS 允许 localhost:5173/8000、Vercel域名、ngrok域名四个来源
+- AKShare 初始化时自动清除代理环境变量确保直连东方财富
+- ngrok 免费版重启后 URL 变化，需同步更新 .env.production 和 cors_origins
+
 ## 扩展计划（来自 README）
 
 - 港美股支持（通过 DataSourceInterface 抽象层添加新数据源）
