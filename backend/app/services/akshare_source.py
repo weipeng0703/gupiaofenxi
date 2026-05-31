@@ -54,9 +54,15 @@ class AKShareSource(DataSourceInterface):
     - AKShare 是同步库，用 asyncio.to_thread() 包装避免阻塞事件循环
     - stock_zh_a_spot_em() 一次返回全部 A 股行情，效率极高
     - 内部限速机制，避免触发反爬
+    - 清除代理环境变量，确保直接访问东方财富接口
     """
 
     def __init__(self):
+        # 清除代理设置，确保 AKShare 直接访问东方财富（不走 VPN/代理）
+        for proxy_var in ["http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "all_proxy", "ALL_PROXY"]:
+            os.environ.pop(proxy_var, None)
+        logger.info("已清除代理环境变量，AKShare 将直接访问东方财富")
+
         self._last_realtime_call: float = 0.0
         self._realtime_lock = asyncio.Lock()
         self._spot_cache: pd.DataFrame | None = None
