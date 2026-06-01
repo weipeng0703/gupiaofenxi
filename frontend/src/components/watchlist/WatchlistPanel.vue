@@ -1,74 +1,312 @@
 <template>
   <div class="watchlist-panel">
+    <!-- 搜索框 -->
     <div class="panel-header">
-      <h3>自选股</h3>
-      <StockSearch @select="onAddStock" />
+      <h3>📋 自选股</h3>
+      <StockSearch @select="onSearchSelect" />
     </div>
 
-    <div v-if="loading" class="loading">加载中...</div>
-
-    <div v-else-if="items.length" class="watchlist-items">
-      <div
-        v-for="item in items"
-        :key="item.id"
-        :class="['watchlist-item', { active: currentCode === item.stock_code }]"
-        @click="onSelectStock(item)"
-      >
-        <div class="item-main">
-          <span class="item-name">{{ item.stock_name }}</span>
-          <span class="item-code">{{ item.stock_code }}</span>
-        </div>
-        <div v-if="getQuote(item.stock_code)" class="item-quote">
-          <span :class="['item-price', getQuote(item.stock_code)!.change_pct > 0 ? 'up' : 'down']">
-            {{ formatPrice(getQuote(item.stock_code)!.price) }}
-          </span>
-          <span :class="['item-change', getQuote(item.stock_code)!.change_pct > 0 ? 'up' : 'down']">
-            {{ formatChange(getQuote(item.stock_code)!.change_pct) }}
-          </span>
-        </div>
-        <button class="remove-btn" @click.stop="onRemove(item.id)">✕</button>
+    <!-- 搜索结果分组选择弹窗 -->
+    <div v-if="searchResult && showGroupPicker" class="group-picker-overlay" @click.self="showGroupPicker = false">
+      <div class="group-picker">
+        <div class="picker-title">将 {{ searchResult.stock_name }} 添加到：</div>
+        <button class="picker-btn picker-btn--watchlist" @click="addToWatchlist">
+          📋 自选股
+        </button>
+        <button
+          v-for="g in groupStore.groups"
+          :key="g.id"
+          class="picker-btn"
+          @click="addToGroup(g.id)"
+        >
+          <span class="color-dot" :style="{ background: g.color }"></span>
+          {{ g.name }}
+        </button>
+        <button class="picker-btn picker-btn--new" @click="showNewGroupFromSearch = true">
+          ✚ 新建分组
+        </button>
+        <button class="picker-close" @click="showGroupPicker = false">取消</button>
       </div>
     </div>
 
-    <div v-else class="empty">暂无自选股，请搜索添加</div>
+    <!-- 自选股列表 -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">自选股</span>
+        <span class="section-count">{{ watchlistStore.items.length }}</span>
+      </div>
+      <div v-if="watchlistStore.loading" class="loading">加载中...</div>
+      <div v-else-if="watchlistStore.items.length" class="watchlist-items">
+        <div
+          v-for="item in watchlistStore.items"
+          :key="item.id"
+          :class="['watchlist-item', { active: currentCode === item.stock_code }]"
+          @click="onSelectStock(item)"
+        >
+          <div class="item-main">
+            <span class="item-name">{{ item.stock_name }}</span>
+            <span class="item-code">{{ item.stock_code }}</span>
+            <span v-if="groupStore.isInAnyGroup(item.stock_code).length" class="item-group-badges">
+              <span
+                v-for="gid in groupStore.isInAnyGroup(item.stock_code)"
+                :key="gid"
+                class="group-badge"
+                :style="{ background: getGroupColor(gid) }"
+              ></span>
+            </span>
+          </div>
+          <div v-if="getQuote(item.stock_code)" class="item-quote">
+            <span :class="['item-price', getQuote(item.stock_code)!.change_pct > 0 ? 'up' : 'down']">
+              {{ formatPrice(getQuote(item.stock_code)!.price) }}
+            </span>
+            <span :class="['item-change', getQuote(item.stock_code)!.change_pct > 0 ? 'up' : 'down']">
+              {{ formatChange(getQuote(item.stock_code)!.change_pct) }}
+            </span>
+          </div>
+          <button class="remove-btn" @click.stop="onRemoveFromWatchlist(item.id)">✕</button>
+        </div>
+      </div>
+      <div v-else class="empty">暂无自选股，请搜索添加</div>
+    </div>
+
+    <!-- 各分组 -->
+    <div v-for="g in groupStore.groups" :key="g.id" class="section group-section">
+      <div class="section-header" :style="{ borderLeftColor: g.color }">
+        <button class="collapse-btn" @click="toggleCollapse(g.id)">
+          {{ collapsed[g.id] ? '▸' : '▾' }}
+        </button>
+        <span class="color-dot" :style="{ background: g.color }"></span>
+        <span class="section-title">{{ g.name }}</span>
+        <span class="section-count">{{ groupStore.getMembers(g.id).length }}</span>
+        <div class="group-actions">
+          <button class="group-action-btn" @click="startEditGroup(g)" title="编辑">✎</button>
+          <button class="group-action-btn group-action-btn--danger" @click="onDeleteGroup(g.id)" title="删除">✕</button>
+        </div>
+      </div>
+
+      <!-- 编辑分组弹窗 -->
+      <div v-if="editingGroup && editingGroup.id === g.id" class="group-edit-inline">
+        <input v-model="editingGroup.name" class="edit-input" placeholder="分组名称" />
+        <div class="color-picker-row">
+          <button
+            v-for="c in GROUP_COLORS"
+            :key="c"
+            :class="['color-pick', { active: editingGroup.color === c }]"
+            :style="{ background: c }"
+            @click="editingGroup.color = c"
+          ></button>
+        </div>
+        <button class="edit-save-btn" @click="saveEditGroup">保存</button>
+        <button class="edit-cancel-btn" @click="editingGroup = null">取消</button>
+      </div>
+
+      <!-- 分组成员列表 -->
+      <div v-if="!collapsed[g.id]" class="group-members">
+        <div
+          v-for="member in groupStore.getMembers(g.id)"
+          :key="member.stock_code"
+          :class="['watchlist-item', { active: currentCode === member.stock_code }]"
+          @click="onSelectGroupMember(member)"
+        >
+          <div class="item-main">
+            <span class="item-name">{{ member.stock_name }}</span>
+            <span class="item-code">{{ member.stock_code }}</span>
+          </div>
+          <div v-if="getQuote(member.stock_code)" class="item-quote">
+            <span :class="['item-price', getQuote(member.stock_code)!.change_pct > 0 ? 'up' : 'down']">
+              {{ formatPrice(getQuote(member.stock_code)!.price) }}
+            </span>
+            <span :class="['item-change', getQuote(member.stock_code)!.change_pct > 0 ? 'up' : 'down']">
+              {{ formatChange(getQuote(member.stock_code)!.change_pct) }}
+            </span>
+          </div>
+          <div class="move-btns">
+            <button class="move-btn" @click.stop="onMoveMember(g.id, member.stock_code, 'up')" title="上移">↑</button>
+            <button class="move-btn" @click.stop="onMoveMember(g.id, member.stock_code, 'down')" title="下移">↓</button>
+          </div>
+          <button class="remove-btn" @click.stop="onRemoveFromGroup(g.id, member.stock_code)">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建分组按钮 -->
+    <div class="create-group-bar">
+      <button v-if="!showNewGroup" class="create-group-btn" @click="showNewGroup = true">
+        ✚ 新建分组
+      </button>
+      <div v-if="showNewGroup" class="create-group-form">
+        <input v-model="newGroupName" class="edit-input" placeholder="分组名称" />
+        <div class="color-picker-row">
+          <button
+            v-for="c in GROUP_COLORS"
+            :key="c"
+            :class="['color-pick', { active: newGroupColor === c }]"
+            :style="{ background: c }"
+            @click="newGroupColor = c"
+          ></button>
+        </div>
+        <button class="edit-save-btn" @click="onCreateGroup">创建</button>
+        <button class="edit-cancel-btn" @click="showNewGroup = false">取消</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { WatchlistItem, StockSearchResult } from '@/types/stock'
+import { ref, reactive, onMounted } from 'vue'
+import type { WatchlistItem, StockSearchResult, StockGroup } from '@/types/stock'
+import { GROUP_COLORS } from '@/types/stock'
 import { useWatchlistStore } from '@/stores/watchlistStore'
+import { useGroupStore } from '@/stores/groupStore'
 import { useStockStore } from '@/stores/stockStore'
 import { formatPrice, formatChange } from '@/utils/colorUtils'
 import StockSearch from '@/components/stock/StockSearch.vue'
 
 const watchlistStore = useWatchlistStore()
+const groupStore = useGroupStore()
 const stockStore = useStockStore()
 
-const items = computed(() => watchlistStore.items)
-const loading = computed(() => watchlistStore.loading)
-const currentCode = computed(() => stockStore.currentCode)
+const currentCode = ref(stockStore.currentCode)
+const collapsed = reactive<Record<number, boolean>>({})
+
+// 新建分组状态
+const showNewGroup = ref(false)
+const newGroupName = ref('')
+const newGroupColor = ref(GROUP_COLORS[0])
+
+// 搜索后分组选择状态
+const searchResult = ref<StockSearchResult | null>(null)
+const showGroupPicker = ref(false)
+const showNewGroupFromSearch = ref(false)
+
+// 编辑分组状态
+const editingGroup = ref<StockGroup | null>(null)
+
+onMounted(async () => {
+  await groupStore.loadGroups()
+})
 
 function getQuote(code: string) {
   return stockStore.getQuote(code)
 }
 
-async function onAddStock(stock: StockSearchResult) {
-  await watchlistStore.add({
-    stock_code: stock.stock_code,
-    stock_name: stock.stock_name,
-    market: stock.market,
-  })
-  // 自动选中新添加的股票
-  stockStore.loadStock(stock.stock_code)
+function getGroupColor(groupId: number): string {
+  const g = groupStore.groups.find(g => g.id === groupId)
+  return g?.color || '#5470c6'
 }
+
+function toggleCollapse(groupId: number) {
+  collapsed[groupId] = !collapsed[groupId]
+}
+
+// ── 搜索选择 ──
+
+function onSearchSelect(stock: StockSearchResult) {
+  searchResult.value = stock
+  showGroupPicker.value = true
+}
+
+async function addToWatchlist() {
+  if (!searchResult.value) return
+  await watchlistStore.add({
+    stock_code: searchResult.value.stock_code,
+    stock_name: searchResult.value.stock_name,
+    market: searchResult.value.market,
+  })
+  showGroupPicker.value = false
+  searchResult.value = null
+}
+
+async function addToGroup(groupId: number) {
+  if (!searchResult.value) return
+  // 先确保在自选股中
+  const existing = watchlistStore.items.find(
+    i => i.stock_code === searchResult.value!.stock_code
+  )
+  if (!existing) {
+    await watchlistStore.add({
+      stock_code: searchResult.value.stock_code,
+      stock_name: searchResult.value.stock_name,
+      market: searchResult.value.market,
+    })
+  }
+  // 再添加到分组
+  try {
+    await groupStore.addMember(
+      groupId,
+      searchResult.value.stock_code,
+      searchResult.value.stock_name,
+      searchResult.value.market,
+    )
+  } catch (e: any) {
+    alert(e?.response?.data?.detail || '添加到分组失败')
+  }
+  showGroupPicker.value = false
+  searchResult.value = null
+}
+
+// ── 自选股操作 ──
 
 function onSelectStock(item: WatchlistItem) {
   stockStore.loadStock(item.stock_code)
 }
 
-async function onRemove(id: number) {
+async function onRemoveFromWatchlist(id: number) {
   await watchlistStore.remove(id)
+}
+
+// ── 分组操作 ──
+
+function onSelectGroupMember(member: { stock_code: string }) {
+  stockStore.loadStock(member.stock_code)
+}
+
+async function onDeleteGroup(groupId: number) {
+  const g = groupStore.groups.find(g => g.id === groupId)
+  if (!g) return
+  if (!confirm(`确认删除分组「${g.name}」？分组内的标的不会从自选股中移除。`)) return
+  await groupStore.deleteGroup(groupId)
+}
+
+function startEditGroup(g: StockGroup) {
+  editingGroup.value = { ...g }
+}
+
+async function saveEditGroup() {
+  if (!editingGroup.value) return
+  await groupStore.updateGroup(editingGroup.value.id, {
+    name: editingGroup.value.name,
+    color: editingGroup.value.color,
+  })
+  editingGroup.value = null
+}
+
+async function onMoveMember(groupId: number, stockCode: string, direction: 'up' | 'down') {
+  await groupStore.moveMember(groupId, stockCode, direction)
+}
+
+async function onRemoveFromGroup(groupId: number, stockCode: string) {
+  await groupStore.removeMember(groupId, stockCode)
+}
+
+async function onCreateGroup() {
+  if (!newGroupName.value.trim()) return
+  await groupStore.createGroup({
+    name: newGroupName.value.trim(),
+    color: newGroupColor.value || GROUP_COLORS[0],
+  })
+  showNewGroup.value = false
+  newGroupName.value = ''
+  newGroupColor.value = GROUP_COLORS[0]
+
+  // 如果是从搜索弹窗触发的，创建后自动添加
+  if (showNewGroupFromSearch.value && searchResult.value) {
+    const newGroup = groupStore.groups[groupStore.groups.length - 1]
+    if (newGroup) {
+      await addToGroup(newGroup.id)
+    }
+    showNewGroupFromSearch.value = false
+  }
 }
 </script>
 
@@ -98,16 +336,91 @@ async function onRemove(id: number) {
   white-space: nowrap;
 }
 
-.watchlist-items {
-  overflow-y: auto;
+/* ── Section ── */
+
+.section {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-left: 3px solid var(--stock-up);
+  background: var(--bg-hover);
+}
+
+.group-section .section-header {
+  cursor: default;
+}
+
+.section-title {
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  color: var(--text-primary);
   flex: 1;
+}
+
+.section-count {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--bg-active);
+}
+
+.color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.collapse-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: 0 4px;
+}
+
+.group-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.group-action-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s;
+}
+
+.group-action-btn:hover {
+  color: var(--text-secondary);
+}
+
+.group-action-btn--danger:hover {
+  color: var(--stock-up);
+}
+
+/* ── Watchlist Items ── */
+
+.watchlist-items, .group-members {
+  overflow-y: auto;
 }
 
 .watchlist-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px var(--spacing-md);
+  padding: 8px var(--spacing-md);
   cursor: pointer;
   transition: background 0.2s;
   border-bottom: 1px solid var(--border-light);
@@ -124,6 +437,7 @@ async function onRemove(id: number) {
 
 .item-main {
   display: flex;
+  align-items: center;
   gap: 6px;
   flex: 1;
   min-width: 0;
@@ -138,6 +452,18 @@ async function onRemove(id: number) {
 .item-code {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.item-group-badges {
+  display: flex;
+  gap: 2px;
+}
+
+.group-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
 .item-quote {
@@ -162,6 +488,27 @@ async function onRemove(id: number) {
 .item-change.up { color: var(--text-up) }
 .item-change.down { color: var(--text-down) }
 
+.move-btns {
+  display: flex;
+  gap: 2px;
+}
+
+.move-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s;
+}
+
+.move-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
 .remove-btn {
   border: none;
   background: transparent;
@@ -169,13 +516,171 @@ async function onRemove(id: number) {
   cursor: pointer;
   font-size: var(--font-size-base);
   padding: 2px 6px;
-  margin-left: var(--spacing-sm);
+  margin-left: var(--spacing-xs);
   border-radius: var(--radius-sm);
   transition: color 0.2s;
 }
 
 .remove-btn:hover {
   color: var(--stock-up);
+}
+
+/* ── 编辑分组 ── */
+
+.group-edit-inline, .create-group-form {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.edit-input {
+  width: 100%;
+  padding: 6px var(--spacing-sm);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.color-picker-row {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+}
+
+.color-pick {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.color-pick.active {
+  border-color: var(--text-primary);
+}
+
+.edit-save-btn {
+  padding: 6px var(--spacing-md);
+  border: 1px solid var(--stock-up);
+  border-radius: var(--radius-sm);
+  background: var(--stock-up);
+  color: var(--bg-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: bold;
+}
+
+.edit-cancel-btn {
+  padding: 6px var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  margin-left: var(--spacing-sm);
+}
+
+/* ── 搜索后分组选择弹窗 ── */
+
+.group-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.group-picker {
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 320px;
+  width: 90%;
+}
+
+.picker-title {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  font-weight: bold;
+  margin-bottom: var(--spacing-md);
+}
+
+.picker-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  margin-bottom: var(--spacing-xs);
+  transition: background 0.2s;
+}
+
+.picker-btn:hover {
+  background: var(--bg-hover);
+}
+
+.picker-btn--watchlist {
+  border-left: 3px solid var(--stock-up);
+}
+
+.picker-btn--new {
+  border-left: 3px solid var(--text-muted);
+  color: var(--text-secondary);
+}
+
+.picker-close {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-sm);
+}
+
+/* ── 创建分组 ── */
+
+.create-group-bar {
+  padding: var(--spacing-md);
+}
+
+.create-group-btn {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  transition: all 0.2s;
+}
+
+.create-group-btn:hover {
+  border-color: var(--stock-up);
+  color: var(--stock-up);
+  background: var(--bg-up-tint);
 }
 
 .loading {
@@ -186,7 +691,7 @@ async function onRemove(id: number) {
 
 .empty {
   text-align: center;
-  padding: var(--spacing-xl) var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-md);
   color: var(--text-muted);
   font-size: var(--font-size-base);
 }

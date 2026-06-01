@@ -59,3 +59,23 @@ class KlineCache(Base):
     volume = Column(Float)
     amount = Column(Float)
     turnover = Column(Float)
+
+
+class StockGroup(Base):
+    __tablename__ = "stock_groups"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    color = Column(String, nullable=False, default="#5470c6")
+    sort_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(String, nullable=False, default="now")
+    updated_at = Column(String, nullable=False, default="now")
+
+
+class StockGroupMember(Base):
+    __tablename__ = "stock_group_members"
+
+    group_id = Column(Integer, primary_key=True, nullable=False)
+    stock_code = Column(String, primary_key=True, nullable=False)
+    sort_order = Column(Integer, nullable=False, default=0)
+    added_at = Column(String, nullable=False, default="now")

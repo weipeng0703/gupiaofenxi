@@ -53,4 +53,18 @@ export const strategiesApi = {
   delete: (id: number) => api.delete(`/strategies/${id}`),
 }
 
+// 分组 API
+export const groupsApi = {
+  list: () => api.get('/groups'),
+  create: (data: { name: string; color?: string }) => api.post('/groups', data),
+  update: (id: number, data: { name?: string; color?: string }) => api.patch(`/groups/${id}`, data),
+  delete: (id: number) => api.delete(`/groups/${id}`),
+  getMembers: (groupId: number) => api.get(`/groups/${groupId}/members`),
+  addMember: (groupId: number, data: { stock_code: string; stock_name: string; market?: string }) =>
+    api.post(`/groups/${groupId}/members`, data),
+  removeMember: (groupId: number, stockCode: string) => api.delete(`/groups/${groupId}/members/${stockCode}`),
+  moveMember: (groupId: number, stockCode: string, direction: 'up' | 'down') =>
+    api.patch(`/groups/${groupId}/members/${stockCode}/move`, { stock_code: stockCode, direction }),
+}
+
 export default api

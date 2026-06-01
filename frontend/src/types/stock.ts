@@ -100,3 +100,52 @@ export interface WSMessage {
   payload: Record<string, unknown>
   timestamp: string
 }
+
+// ─── 股票分组 ───
+
+export interface StockGroup {
+  id: number
+  name: string
+  color: string
+  sort_order: number
+  created_at: string
+  member_count: number
+}
+
+export interface StockGroupCreate {
+  name: string
+  color?: string
+}
+
+export interface StockGroupUpdate {
+  name?: string
+  color?: string
+}
+
+export interface StockGroupMember {
+  stock_code: string
+  stock_name: string
+  market: string
+  sort_order: number
+  added_at: string
+}
+
+export interface StockGroupMemberAdd {
+  stock_code: string
+  stock_name: string
+  market?: string
+}
+
+/** 分组颜色预设 */
+export const GROUP_COLORS: string[] = [
+  '#5470c6', // 蓝
+  '#91cc75', // 绿
+  '#fac858', // 黄
+  '#ee6666', // 红
+  '#73c0de', // 青
+  '#3ba272', // 深绿
+  '#fc8452', // 橙
+  '#9a60b4', // 紫
+  '#ea7ccc', // 粉
+  '#48b8d0', // 天蓝
+]

@@ -62,6 +62,22 @@ CREATE_TABLES_SQL = [
         PRIMARY KEY (stock_code, period, date)
     )""",
     """CREATE INDEX IF NOT EXISTS idx_kline_cache_lookup ON kline_cache(stock_code, period, date)""",
+    """CREATE TABLE IF NOT EXISTS stock_groups (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        name        TEXT    NOT NULL,
+        color       TEXT    NOT NULL DEFAULT '#5470c6',
+        sort_order  INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+        updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    )""",
+    """CREATE TABLE IF NOT EXISTS stock_group_members (
+        group_id    INTEGER NOT NULL REFERENCES stock_groups(id) ON DELETE CASCADE,
+        stock_code  TEXT    NOT NULL,
+        sort_order  INTEGER NOT NULL DEFAULT 0,
+        added_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (group_id, stock_code)
+    )""",
+    """CREATE INDEX IF NOT EXISTS idx_group_members_group ON stock_group_members(group_id)""",
 ]
 
 

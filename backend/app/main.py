@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_db
-from app.api import stocks, watchlist, signals, strategies
+from app.api import stocks, watchlist, signals, strategies, stock_groups
 from app.ws.handler import websocket_endpoint
 from app.services.realtime_push import push_service
 
@@ -48,6 +48,7 @@ app.include_router(stocks.router, prefix="/api/stocks", tags=["stocks"])
 app.include_router(watchlist.router, prefix="/api/watchlist", tags=["watchlist"])
 app.include_router(signals.router, prefix="/api/signals", tags=["signals"])
 app.include_router(strategies.router, prefix="/api/strategies", tags=["strategies"])
+app.include_router(stock_groups.router, prefix="/api/groups", tags=["groups"])
 
 # WebSocket 端点
 app.websocket("/ws")(websocket_endpoint)

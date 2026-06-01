@@ -131,3 +131,42 @@ class WSMessage(BaseModel):
     type: str
     payload: dict = {}
     timestamp: str = ""
+
+
+# ─── 股票分组 ───
+class StockGroupCreate(BaseModel):
+    name: str
+    color: str = "#5470c6"
+
+
+class StockGroupItem(BaseModel):
+    id: int
+    name: str
+    color: str
+    sort_order: int
+    created_at: str
+    member_count: int = 0
+
+
+class StockGroupUpdate(BaseModel):
+    name: str | None = None
+    color: str | None = None
+
+
+class StockGroupMemberItem(BaseModel):
+    stock_code: str
+    stock_name: str
+    market: str
+    sort_order: int
+    added_at: str
+
+
+class StockGroupMemberAdd(BaseModel):
+    stock_code: str
+    stock_name: str
+    market: str = "A"
+
+
+class StockGroupMemberMove(BaseModel):
+    stock_code: str
+    direction: str  # "up" or "down"
