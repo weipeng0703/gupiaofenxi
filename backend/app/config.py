@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     akshare_hist_cache_hours: int = 4           # 历史 K 线缓存过期时间（小时）
 
     # 策略
-    strategy_dir: str = "backend/app/strategies"
+    strategy_dir: str = "app/strategies"
 
     # WebSocket
     ws_heartbeat_interval: int = 30             # WebSocket 心跳间隔（秒）
