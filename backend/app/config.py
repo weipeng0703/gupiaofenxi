@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # 服务器
     host: str = "0.0.0.0"
     port: int = 8000
+
+    # 微信推送 — 企业微信机器人 Webhook URL（留空则不推送）
+    wechat_webhook_url: str = ""
+
     # CORS — 存为字符串（逗号分隔），环境变量可直接传入，不会报解析错误
     cors_origins: str = "http://localhost:5173,http://localhost:8000,https://gupiaofenxi-bmep.vercel.app,https://paving-regular-wifi.ngrok-free.dev"
 

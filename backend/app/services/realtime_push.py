@@ -99,6 +99,10 @@ class RealtimePushService:
                     from app.ws.handler import manager
                     await manager.broadcast(signal_msg)
 
+                    # 微信推送
+                    from app.services.wechat_notify import send_wechat_signal
+                    await send_wechat_signal(signal)
+
             except Exception as e:
                 logger.debug(f"策略评估异常 {stock_code}: {e}")
 

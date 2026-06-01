@@ -124,6 +124,64 @@
         </div>
       </section>
 
+      <!-- ── 微信推送设置 ── -->
+      <section class="rule-section">
+        <div class="section-title">
+          <span class="section-icon">💬</span>
+          <h2>微信推送设置</h2>
+          <span :class="['section-badge', wechatConfigured ? 'active' : 'pending']">
+            {{ wechatConfigured ? '已配置' : '未配置' }}
+          </span>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-header">
+            <h3>企业微信机器人推送</h3>
+          </div>
+          <div class="rule-body">
+            <div class="wechat-setup-steps">
+              <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <strong>注册企业微信</strong>
+                  <p>访问 <a href="https://work.weixin.qq.com/" target="_blank">work.weixin.qq.com</a>，个人即可免费注册</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <strong>创建群聊 + 添加机器人</strong>
+                  <p>在企业微信中创建一个群聊 → 群设置 → 群机器人 → 添加机器人 → 复制 Webhook 地址</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <strong>配置 Webhook URL</strong>
+                  <p>在后端目录创建 <code>.env</code> 文件，添加：</p>
+                  <pre class="code-block">WECHAT_WEBHOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=你的key</pre>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <strong>重启后端 + 测试</strong>
+                  <p>重启后端服务，然后点击下方按钮测试推送</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rule-note">
+            <button class="test-push-btn" @click="testWechatPush" :disabled="testingPush">
+              {{ testingPush ? '发送中...' : '📨 发送测试消息' }}
+            </button>
+            <span v-if="testResult" :class="['test-result', testResult.success ? 'success' : 'fail']">
+              {{ testResult.message }}
+            </span>
+          </div>
+        </div>
+      </section>
+
       <!-- ── 颜色对照 ── -->
       <section class="rule-section">
         <div class="section-title">
@@ -158,6 +216,39 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+
+const wechatConfigured = ref(false)
+const testingPush = ref(false)
+const testResult = ref<{ success: boolean; message: string } | null>(null)
+
+onMounted(async () => {
+  try {
+    const { data } = await axios.get(`${apiBaseUrl}/wechat/status`)
+    wechatConfigured.value = data.configured
+  } catch {
+    wechatConfigured.value = false
+  }
+})
+
+async function testWechatPush() {
+  testingPush.value = true
+  testResult.value = null
+  try {
+    const { data } = await axios.post(`${apiBaseUrl}/wechat/test`)
+    testResult.value = data
+    if (data.success) {
+      wechatConfigured.value = true
+    }
+  } catch (e: any) {
+    testResult.value = { success: false, message: e?.response?.data?.detail || '请求失败，请检查后端是否运行' }
+  } finally {
+    testingPush.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -383,6 +474,102 @@
 
 .back-link:hover {
   color: var(--stock-up);
+}
+
+/* ── 微信推送设置 ── */
+
+.wechat-setup-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.step {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+}
+
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--stock-up);
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.step-content p {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.step-content a {
+  color: var(--stock-up);
+  text-decoration: none;
+}
+
+.step-content a:hover {
+  text-decoration: underline;
+}
+
+.code-block {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-top: var(--spacing-xs);
+  overflow-x: auto;
+}
+
+.test-push-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--stock-up);
+  border-radius: var(--radius-sm);
+  background: var(--stock-up);
+  color: var(--bg-primary);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.test-push-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.test-push-btn:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.test-result {
+  margin-left: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: bold;
+}
+
+.test-result.success {
+  color: var(--stock-down);
+}
+
+.test-result.fail {
+  color: var(--stock-up);
+}
+
+.section-badge.pending {
+  background: var(--text-muted);
+  color: var(--bg-primary);
 }
 
 @media (max-width: 768px) {
