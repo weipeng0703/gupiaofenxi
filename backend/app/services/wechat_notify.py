@@ -4,7 +4,7 @@
 """
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from curl_cffi import requests as curl_requests
 
@@ -13,7 +13,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 # 信号去重：记录最近推送过的信号，避免重复推送
-_recent_signals: dict[str, str] = {}  # key: "stock_code:strategy_name", value: timestamp
+_recent_signals: dict[str, datetime] = {}  # key: "stock_code:strategy_name", value: datetime对象
 _DEDUP_INTERVAL_SECONDS = 600  # 同一信号 10 分钟内不重复推送
 
 
@@ -30,11 +30,12 @@ async def send_wechat_signal(signal: dict) -> bool:
     if not webhook_url:
         return False
 
-    # 去重检查
+    # 去重检查 — 基于10分钟过期时间
     dedup_key = f"{signal.get('stock_code', '')}:{signal.get('strategy_name', '')}"
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now = datetime.now()
     last_sent = _recent_signals.get(dedup_key)
-    if last_sent:
+    if last_sent and (now - last_sent) < timedelta(seconds=_DEDUP_INTERVAL_SECONDS):
+        logger.debug(f"微信推送去重跳过: {dedup_key}, 上次推送 {last_sent}")
         return False
 
     # 构建消息

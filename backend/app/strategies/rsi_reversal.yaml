@@ -1,24 +1,24 @@
 name: RSI超卖低吸
-description: "规则1：RSI低于20说明卖方过多，进入超卖区，股价到底，应低吸"
+description: "规则1：RSI低于30说明卖方过多，进入超卖区，股价到底，应低吸"
 signal_type: BUY
 conditions:
   - type: threshold
     indicator: rsi
     params:
-      value: 20
+      value: 30
       direction: below
 confidence_weights:
   - indicator: rsi
     weight: 0.8
 ---
 name: RSI超买高抛
-description: "规则1：RSI高于80说明买方过多，进入超买区，股价到顶，应高抛"
+description: "规则1：RSI高于70说明买方过多，进入超买区，股价到顶，应高抛"
 signal_type: SELL
 conditions:
   - type: threshold
     indicator: rsi
     params:
-      value: 80
+      value: 70
       direction: above
 confidence_weights:
   - indicator: rsi

@@ -129,7 +129,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 if raw:
                     df = pd.DataFrame(raw)
                     df = df.sort_values("date").reset_index(drop=True)
-                    indicators = IndicatorCalculator.calculate_all(df)
+                    indicators = IndicatorCalculator.compute_all(df)
                     quote = await ds.get_realtime_quote(stock_code)
                     stock_name = quote.get("stock_name", stock_code) if quote else stock_code
 
