@@ -41,6 +41,7 @@ async def send_wechat_signal(signal: dict) -> bool:
     # 构建消息
     signal_type = signal.get("signal_type", "BUY")
     stock_code = signal.get("stock_code", "")
+    stock_name = signal.get("stock_name", "")
     strategy_name = signal.get("strategy_name", "")
     confidence = signal.get("confidence", 0)
     price = signal.get("price", 0)
@@ -66,7 +67,7 @@ async def send_wechat_signal(signal: dict) -> bool:
     content = (
         f"{type_emoji} 交易信号提醒\n\n"
         f"信号类型：{type_label}\n"
-        f"股票代码：{stock_code}\n"
+        f"股票：{stock_name}（{stock_code}）\n"
         f"策略名称：{strategy_name}\n"
         f"当前价格：{price:.2f}\n"
         f"置信度：{confidence * 100:.0f}%\n"

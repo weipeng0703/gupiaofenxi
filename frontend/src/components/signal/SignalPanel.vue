@@ -2,7 +2,16 @@
   <div class="signal-panel">
     <div class="panel-header">
       <h3>信号通知</h3>
-      <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+      <div class="header-actions">
+        <button
+          class="btn-test"
+          :disabled="generating"
+          @click="onGenerateTest"
+        >
+          {{ generating ? '生成中...' : '测试推送' }}
+        </button>
+        <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+      </div>
     </div>
 
     <div v-if="signals.length" class="signal-list">
@@ -10,7 +19,7 @@
         v-for="signal in signals"
         :key="signal.id"
         :class="['signal-item', signal.signal_type, { unread: !signal.is_read }]"
-        @click="onMarkRead(signal)"
+        @click="onSignalClick(signal)"
       >
         <div class="signal-icon">
           {{ signal.signal_type === 'BUY' ? '↑' : '↓' }}
@@ -20,7 +29,8 @@
             <span :class="['signal-type', signal.signal_type]">
               {{ signal.signal_type === 'BUY' ? '买入' : '卖出' }}
             </span>
-            <span class="signal-stock">{{ signal.stock_code }}</span>
+            <span class="signal-stock-name">{{ signal.stock_name || signal.stock_code }}</span>
+            <span class="signal-stock-code">{{ signal.stock_code }}</span>
           </div>
           <div class="signal-strategy">{{ signal.strategy_name }}</div>
           <div class="signal-detail">
@@ -36,29 +46,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { SignalItem } from '@/types/stock'
 import { useSignalStore } from '@/stores/signalStore'
-
-const props = defineProps<{
-  stockCode?: string
-}>()
+import { useStockStore } from '@/stores/stockStore'
+import { useLayoutStore } from '@/stores/layoutStore'
+import { signalsApi } from '@/services/api'
 
 const signalStore = useSignalStore()
+const stockStore = useStockStore()
+const layoutStore = useLayoutStore()
+const generating = ref(false)
 
-const signals = computed(() => {
-  if (props.stockCode) return signalStore.getByStock(props.stockCode)
-  return signalStore.signals.slice(0, 20)
-})
+const signals = computed(() => signalStore.signals.slice(0, 50))
+const unreadCount = computed(() => signalStore.unreadCount)
 
-const unreadCount = computed(() => {
-  if (props.stockCode) return signalStore.getByStock(props.stockCode).filter(s => !s.is_read).length
-  return signalStore.unreadCount
-})
-
-async function onMarkRead(signal: SignalItem) {
+async function onSignalClick(signal: SignalItem) {
   if (!signal.is_read) {
     await signalStore.markRead(signal.id)
+  }
+  stockStore.loadStock(signal.stock_code)
+  // Mobile: switch to chart tab
+  if (layoutStore.activeTab) {
+    layoutStore.activeTab = 'chart'
+  }
+}
+
+async function onGenerateTest() {
+  if (generating.value) return
+  generating.value = true
+  try {
+    await signalsApi.generateSpecialWatchTest()
+  } catch (e) {
+    console.error('生成测试信号失败:', e)
+  } finally {
+    setTimeout(() => { generating.value = false }, 3000)
   }
 }
 </script>
@@ -83,6 +105,34 @@ async function onMarkRead(signal: SignalItem) {
   font-size: var(--font-size-md);
   margin: 0;
   color: var(--text-primary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-test {
+  padding: 3px 10px;
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-test:hover:not(:disabled) {
+  background: var(--stock-up);
+  color: #fff;
+  border-color: var(--stock-up);
+}
+
+.btn-test:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .badge {
@@ -152,9 +202,15 @@ async function onMarkRead(signal: SignalItem) {
   font-weight: bold;
 }
 
-.signal-stock {
+.signal-stock-name {
   color: var(--text-primary);
   font-weight: bold;
+}
+
+.signal-stock-code {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
 }
 
 .signal-strategy {

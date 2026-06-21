@@ -22,7 +22,8 @@ CREATE_TABLES_SQL = [
         market      TEXT    NOT NULL DEFAULT 'A',
         added_at    TEXT    NOT NULL DEFAULT (datetime('now')),
         is_active   INTEGER NOT NULL DEFAULT 1,
-        notes       TEXT    DEFAULT ''
+        notes       TEXT    DEFAULT '',
+        is_special_watch INTEGER NOT NULL DEFAULT 0
     )""",
     """CREATE TABLE IF NOT EXISTS strategies (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,6 +93,14 @@ async def init_db():
         await conn.execute(text("PRAGMA journal_mode=WAL"))
         for sql in CREATE_TABLES_SQL:
             await conn.execute(text(sql))
+
+        # Migration: add is_special_watch column for existing databases
+        try:
+            await conn.execute(text(
+                "ALTER TABLE watchlist ADD COLUMN is_special_watch INTEGER NOT NULL DEFAULT 0"
+            ))
+        except Exception:
+            pass  # column already exists
 
 
 async def get_db() -> AsyncSession:

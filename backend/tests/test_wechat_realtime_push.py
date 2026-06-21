@@ -27,7 +27,7 @@ from app.services.indicator_calc import IndicatorCalculator
 from app.services.strategy_engine import StrategyEngine
 
 
-def build_analysis_message(stock_code: str, kline: list, indicators: dict, signals: list, quote: dict | None = None) -> str:
+def build_analysis_message(stock_code: str, stock_name: str, kline: list, indicators: dict, signals: list) -> str:
     """根据指标和策略结果构建分析报告"""
     latest = kline[-1]
     price = latest["close"]
@@ -54,7 +54,7 @@ def build_analysis_message(stock_code: str, kline: list, indicators: dict, signa
 
     # 构建消息
     lines = [
-        f"{trend_emoji} 【{stock_code}】实时分析报告",
+        f"{trend_emoji} 【{stock_name}({stock_code})】实时分析报告",
         f"{'═' * 28}",
         f"",
         f"📊 行情数据",
@@ -187,7 +187,7 @@ def _generate_recommendation(price, rsi14, rsi6, kdj_k, kdj_d, kdj_j, ma5, ma10,
         return f"震荡观望，暂不操作 ({reason_str})"
 
 
-async def push_stock_analysis(stock_code: str, ds: AKShareSource, engine: StrategyEngine) -> bool:
+async def push_stock_analysis(stock_code: str, stock_name: str, ds: AKShareSource, engine: StrategyEngine) -> bool:
     """对单只股票执行完整分析并推送微信"""
     webhook_url = settings.wechat_webhook_url
     if not webhook_url:
@@ -195,7 +195,7 @@ async def push_stock_analysis(stock_code: str, ds: AKShareSource, engine: Strate
         return False
 
     print(f"\n{'─' * 40}")
-    print(f"分析 {stock_code} ...")
+    print(f"分析 {stock_name}({stock_code}) ...")
 
     raw_kline = await ds.get_hist_kline(stock_code, period="daily")
     if not raw_kline:
@@ -208,7 +208,7 @@ async def push_stock_analysis(stock_code: str, ds: AKShareSource, engine: Strate
 
     signals = engine.evaluate(stock_code, indicators, raw_kline)
 
-    message = build_analysis_message(stock_code, raw_kline, indicators, signals)
+    message = build_analysis_message(stock_code, stock_name, raw_kline, indicators, signals)
 
     print(f"  RSI14={indicators['rsi']['RSI14'][-1]:.2f}, "
           f"KDJ=({indicators['kdj']['K'][-1]:.2f},{indicators['kdj']['D'][-1]:.2f},{indicators['kdj']['J'][-1]:.2f})")
@@ -243,28 +243,27 @@ async def main():
     print(f"Webhook: {settings.wechat_webhook_url[:50]}...")
 
     if args.code:
-        codes = [args.code]
+        stocks = [(args.code, "")]
     elif args.all:
         from app.database import async_session
         from sqlalchemy import text
         async with async_session() as session:
-            result = await session.execute(text("SELECT stock_code FROM watchlist WHERE is_active = 1"))
-            codes = [row[0] for row in result.fetchall()]
-        print(f"自选股列表: {len(codes)} 只")
+            result = await session.execute(text("SELECT stock_code, stock_name FROM watchlist WHERE is_active = 1"))
+            stocks = [(row[0], row[1]) for row in result.fetchall()]
+        print(f"自选股列表: {len(stocks)} 只")
     else:
-        # 默认测试：选几只有代表性的
-        codes = ["000001", "600036", "159995"]
-        print(f"默认测试: {codes}")
+        stocks = [("000001", "平安银行"), ("600036", "招商银行"), ("159995", "芯片ETF")]
+        print(f"默认测试: {[s[0] for s in stocks]}")
 
     success_count = 0
-    for code in codes:
-        ok = await push_stock_analysis(code, ds, engine)
+    for code, name in stocks:
+        ok = await push_stock_analysis(code, name, ds, engine)
         if ok:
             success_count += 1
         await asyncio.sleep(1)  # 避免请求过快
 
     print(f"\n{'═' * 40}")
-    print(f"完成: {success_count}/{len(codes)} 只推送成功")
+    print(f"完成: {success_count}/{len(stocks)} 只推送成功")
 
 
 if __name__ == "__main__":

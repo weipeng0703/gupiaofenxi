@@ -1,7 +1,7 @@
 /** ECharts K 线图配置构建器 — 四面板同步图表 */
 import type { EChartsOption } from 'echarts'
 import type { KlinePoint, IndicatorData } from '@/types/stock'
-import { STOCK_COLORS, INDICATOR_COLORS, getStockColor, getVolumeColor } from '@/utils/colorUtils'
+import { STOCK_COLORS, INDICATOR_COLORS, getVolumeColor } from '@/utils/colorUtils'
 
 /**
  * 根据 containerWidth 计算 ECharts grid 偏移量
@@ -21,16 +21,17 @@ function getGridOffsets(containerWidth?: number) {
  * 构建 K 线四面板完整配置
  *
  * 面板布局：
- * - Grid 0: K 线蜡烛图 + MA 线叠加 (50% 高度)
- * - Grid 1: 成交量柱状图 (16% 高度)
- * - Grid 2: RSI 曲线 (14% 高度)
- * - Grid 3: KDJ 三线 (14% 高度)
+ * - Grid 0: K 线蜡烛图 + MA 线叠加 (43% 高度)
+ * - Grid 1: 成交量柱状图 (12% 高度)
+ * - Grid 2: RSI 曲线 (11% 高度)
+ * - Grid 3: KDJ 三线 (11% 高度)
  */
 export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData, containerWidth?: number): EChartsOption {
   if (!kline.length) return {}
 
   const offsets = getGridOffsets(containerWidth)
   const isSmall = containerWidth && containerWidth <= 768
+  const leftPx = typeof offsets.left === 'number' ? offsets.left : 60
 
   const dates = kline.map((k) => k.date)
   // ECharts candlestick 数据格式: [open, close, low, high]
@@ -71,9 +72,9 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData,
   // RSI 多周期线数据
   const rsiSeries: EChartsOption['series'] = []
   const rsiColors: Record<string, string> = {
-    RSI6: '#2d2d2d',    // 黑线 — 短周期最灵敏，快速线
-    RSI12: '#f59e0b',   // 黄线 — 中周期
-    RSI24: '#8b5cf6',   // 紫线 — 长周期最平滑
+    RSI6: '#2d2d2d',
+    RSI12: '#f59e0b',
+    RSI24: '#8b5cf6',
   }
   if (indicators.rsi) {
     for (const [name, data] of Object.entries(indicators.rsi)) {
@@ -91,21 +92,53 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData,
   }
 
   const option: EChartsOption = {
-    animation: false, // 大数据集性能优化
+    animation: false,
+    graphic: [
+      {
+        type: 'text',
+        left: leftPx + 5,
+        top: '50%',
+        style: { text: 'VOL', fontSize: isSmall ? 9 : 11, fill: '#888', fontWeight: 'bold' },
+      },
+      {
+        type: 'text',
+        left: leftPx + 5,
+        top: '63%',
+        style: {
+          text: 'RSI (6,12,24)',
+          fontSize: isSmall ? 9 : 11,
+          fill: '#888',
+          fontWeight: 'bold',
+        },
+      },
+      {
+        type: 'text',
+        left: leftPx + 5,
+        top: '80%',
+        style: {
+          text: 'KDJ (9,3,3)',
+          fontSize: isSmall ? 9 : 11,
+          fill: '#888',
+          fontWeight: 'bold',
+        },
+      },
+    ],
     legend: {
-      data: ['K线', ...Object.keys(indicators.ma || {}), '成交量', ...Object.keys(indicators.rsi || {}), 'K', 'D', 'J'],
+      data: ['K线', ...Object.keys(indicators.ma || {}), ...Object.keys(indicators.rsi || {}), 'K', 'D', 'J'],
       top: 5,
       left: offsets.left,
-      textStyle: { fontSize: isSmall ? 9 : 12 },
+      textStyle: { fontSize: isSmall ? 9 : 11 },
+      itemWidth: 14,
+      itemGap: isSmall ? 8 : 12,
     },
     axisPointer: {
-      link: [{ xAxisIndex: [0, 1, 2, 3] }], // 四面板 x 轴联动
+      link: [{ xAxisIndex: [0, 1, 2, 3] }],
     },
     grid: [
-      { left: offsets.left, right: offsets.right, top: 40, height: '45%' },         // K 线 + MA
-      { left: offsets.left, right: offsets.right, top: '55%', height: '14%' },       // 成交量
-      { left: offsets.left, right: offsets.right, top: '72%', height: '12%' },       // RSI
-      { left: offsets.left, right: offsets.right, top: '87%', height: '11%' },       // KDJ
+      { left: offsets.left, right: offsets.right, top: 40, height: '38%' },
+      { left: offsets.left, right: offsets.right, top: '50%', height: '10%' },
+      { left: offsets.left, right: offsets.right, top: '63%', height: '14%' },
+      { left: offsets.left, right: offsets.right, top: '80%', height: '14%' },
     ],
     xAxis: [
       { type: 'category', data: dates, gridIndex: 0, axisLabel: { show: false }, axisTick: { show: false } },
@@ -116,14 +149,14 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData,
     yAxis: [
       { type: 'value', gridIndex: 0, scale: true, splitLine: { show: true }, axisLabel: { fontSize: isSmall ? 9 : 10 } },
       { type: 'value', gridIndex: 1, splitNumber: 2, axisLabel: { show: true, fontSize: isSmall ? 9 : 10 } },
-      { type: 'value', gridIndex: 2, min: 0, max: 100, splitNumber: 4, axisLabel: { fontSize: isSmall ? 9 : 10 } },
-      { type: 'value', gridIndex: 3, axisLabel: { fontSize: isSmall ? 9 : 10 } },
+      { type: 'value', gridIndex: 2, min: 0, max: 100, splitNumber: 2, axisLabel: { fontSize: isSmall ? 9 : 10 } },
+      { type: 'value', gridIndex: 3, splitNumber: 2, axisLabel: { fontSize: isSmall ? 9 : 10 } },
     ],
     dataZoom: [
       {
         type: 'inside',
         xAxisIndex: [0, 1, 2, 3],
-        start: 70, // 默认显示最近 30% 的数据
+        start: 70,
         end: 100,
       },
       {
@@ -136,7 +169,8 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData,
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'cross' },
-      formatter: (params: unknown) => formatTooltip(params, kline),
+      confine: true,
+      formatter: (params: unknown) => formatTooltip(params, kline, indicators),
     },
     series: [
       // ── 面板 0: K 线蜡烛图 ──
@@ -147,8 +181,8 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData,
         xAxisIndex: 0,
         yAxisIndex: 0,
         itemStyle: {
-          color: STOCK_COLORS.up,       // 涨 — 红色填充
-          color0: STOCK_COLORS.down,    // 跌 — 绿色填充
+          color: STOCK_COLORS.up,
+          color0: STOCK_COLORS.down,
           borderColor: STOCK_COLORS.up,
           borderColor0: STOCK_COLORS.down,
         },
@@ -166,20 +200,21 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData,
       },
       // ── 面板 2: RSI 多周期 ──
       ...rsiSeries,
-      // RSI 超买超卖标记线（只在第一条 RSI 线上添加）
+      // RSI 超买超卖参考线
       {
-        name: 'RSI超买超卖',
+        name: 'RSI参考线',
         type: 'line',
         data: [],
         xAxisIndex: 2,
         yAxisIndex: 2,
         markLine: {
           silent: true,
-          lineStyle: { type: 'dashed', color: '#aaa' },
+          symbol: 'none',
+          label: { fontSize: isSmall ? 8 : 10 },
           data: [
-            { yAxis: 20, name: '超卖线(20)' },
-            { yAxis: 50, name: '中轴线(50)' },
-            { yAxis: 80, name: '超买线(80)' },
+            { yAxis: 30, name: '超卖', lineStyle: { type: 'dashed', color: STOCK_COLORS.down }, label: { formatter: '超卖 30', position: 'insideEndTop', color: STOCK_COLORS.down } },
+            { yAxis: 50, name: '中轴', lineStyle: { type: 'dashed', color: '#ccc' }, label: { formatter: '50', position: 'insideEndTop', color: '#aaa' } },
+            { yAxis: 70, name: '超买', lineStyle: { type: 'dashed', color: STOCK_COLORS.up }, label: { formatter: '超买 70', position: 'insideEndTop', color: STOCK_COLORS.up } },
           ],
         },
       },
@@ -214,14 +249,31 @@ export function buildKlineOption(kline: KlinePoint[], indicators: IndicatorData,
         showSymbol: false,
         lineStyle: { color: INDICATOR_COLORS.kdj_j, width: 1.5 },
       },
+      // KDJ 超买超卖参考线
+      {
+        name: 'KDJ参考线',
+        type: 'line',
+        data: [],
+        xAxisIndex: 3,
+        yAxisIndex: 3,
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          label: { fontSize: isSmall ? 8 : 10 },
+          data: [
+            { yAxis: 20, name: '超卖', lineStyle: { type: 'dashed', color: '#ccc' }, label: { formatter: '20', position: 'insideEndTop', color: '#aaa' } },
+            { yAxis: 80, name: '超买', lineStyle: { type: 'dashed', color: '#ccc' }, label: { formatter: '80', position: 'insideEndTop', color: '#aaa' } },
+          ],
+        },
+      },
     ],
   }
 
   return option
 }
 
-/** Tooltip 格式化 */
-function formatTooltip(params: unknown, kline: KlinePoint[]): string {
+/** Tooltip 格式化 — 分组显示 */
+function formatTooltip(params: unknown, kline: KlinePoint[], indicators: IndicatorData): string {
   const p = params as Array<{ seriesName: string; dataIndex: number; value: unknown; axisValue: string }>
   if (!Array.isArray(p) || !p.length) return ''
 
@@ -232,15 +284,67 @@ function formatTooltip(params: unknown, kline: KlinePoint[]): string {
   const dateStr = p[0]?.axisValue || k.date
   const color = k.close > k.open ? STOCK_COLORS.up : STOCK_COLORS.down
 
-  let html = `<div style="font-size:12px"><b>${dateStr}</b><br/>`
-  html += `开: ${k.open}  收: <span style="color:${color}">${k.close}</span><br/>`
-  html += `高: ${k.high}  低: ${k.low}<br/>`
-  html += `量: ${k.volume?.toLocaleString() || '-'}<br/>`
+  // 计算涨跌幅
+  let changePct: number | null = null
+  if (k.change_pct != null) {
+    changePct = k.change_pct
+  } else if (idx > 0) {
+    const prevClose = kline[idx - 1]?.close
+    if (prevClose) {
+      changePct = ((k.close - prevClose) / prevClose) * 100
+    }
+  }
+  const changePctStr = changePct != null
+    ? `<span style="color:${changePct >= 0 ? STOCK_COLORS.up : STOCK_COLORS.down}">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</span>`
+    : '-'
 
-  // 添加指标值
-  for (const item of p) {
-    if (item.seriesName !== 'K线' && item.value != null && item.value !== '-') {
-      html += `${item.seriesName}: ${item.value}<br/>`
+  const sep = '<div style="border-top:1px solid #eee;margin:3px 0"></div>'
+
+  let html = `<div style="font-size:12px;line-height:1.6"><b>${dateStr}</b><br/>`
+  html += `开: ${k.open.toFixed(2)}  收: <span style="color:${color}">${k.close.toFixed(2)}</span><br/>`
+  html += `高: ${k.high.toFixed(2)}  低: ${k.low.toFixed(2)}<br/>`
+  html += `涨跌: ${changePctStr}<br/>`
+  html += `量: ${k.volume?.toLocaleString() || '-'}`
+
+  // MA 指标组
+  const maData = indicators.ma
+  if (maData) {
+    const maItems: string[] = []
+    for (const [name, values] of Object.entries(maData)) {
+      const v = values[idx]
+      if (v != null) maItems.push(`${name}: ${v.toFixed(2)}`)
+    }
+    if (maItems.length) {
+      html += sep
+      html += maItems.join('  ')
+    }
+  }
+
+  // RSI 指标组
+  const rsiData = indicators.rsi
+  if (rsiData) {
+    const rsiItems: string[] = []
+    for (const [name, values] of Object.entries(rsiData)) {
+      const v = values[idx]
+      if (v != null) rsiItems.push(`${name}: ${v.toFixed(2)}`)
+    }
+    if (rsiItems.length) {
+      html += sep
+      html += rsiItems.join('  ')
+    }
+  }
+
+  // KDJ 指标组
+  const kdjData = indicators.kdj
+  if (kdjData) {
+    const kdjItems: string[] = []
+    for (const [name, values] of Object.entries(kdjData)) {
+      const v = values[idx]
+      if (v != null) kdjItems.push(`${name}: ${v.toFixed(2)}`)
+    }
+    if (kdjItems.length) {
+      html += sep
+      html += kdjItems.join('  ')
     }
   }
 

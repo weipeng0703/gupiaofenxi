@@ -84,6 +84,11 @@ class AKShareSource(DataSourceInterface):
         end_date: str | None = None,
         adjust: str = "qfq",
     ) -> list[dict]:
+        # 分钟级周期路由到专用接口
+        if period in ("1min", "5min", "15min", "30min", "60min"):
+            minute_period = PERIOD_MAP.get(period, "5")
+            return await self.get_intraday_minutes(stock_code, minute_period, start_date, end_date, adjust)
+
         # 优先尝试 AKShare（东方财富接口）
         result = await self._get_hist_kline_akshare(stock_code, period, start_date, end_date, adjust)
         if result:

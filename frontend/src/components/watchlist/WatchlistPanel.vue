@@ -10,6 +10,9 @@
     <div v-if="searchResult && showGroupPicker" class="group-picker-overlay" @click.self="showGroupPicker = false">
       <div class="group-picker">
         <div class="picker-title">将 {{ searchResult.stock_name }} 添加到：</div>
+        <button class="picker-btn picker-btn--special" @click="addToSpecialWatch">
+          ★ 特别关注
+        </button>
         <button class="picker-btn picker-btn--watchlist" @click="addToWatchlist">
           📋 自选股
         </button>
@@ -29,13 +32,46 @@
       </div>
     </div>
 
+    <!-- 特别关注分区 -->
+    <div v-if="watchlistStore.specialWatchItems.length" class="section special-watch-section">
+      <div class="section-header section-header--special" @click="collapsedSpecial = !collapsedSpecial">
+        <button class="collapse-btn">{{ collapsedSpecial ? '▸' : '▾' }}</button>
+        <span class="section-title">★ 特别关注</span>
+        <span class="section-count">{{ watchlistStore.specialWatchItems.length }}</span>
+      </div>
+      <div v-if="!collapsedSpecial" class="watchlist-items">
+        <div
+          v-for="item in watchlistStore.specialWatchItems"
+          :key="'sw-' + item.id"
+          :class="['watchlist-item', { active: currentCode === item.stock_code }]"
+          @click="onSelectStock(item)"
+        >
+          <div class="item-main">
+            <span class="item-name">{{ item.stock_name }}</span>
+            <span class="item-code">{{ item.stock_code }}</span>
+          </div>
+          <div v-if="getQuote(item.stock_code)" class="item-quote">
+            <span :class="['item-price', getQuote(item.stock_code)!.change_pct > 0 ? 'up' : 'down']">
+              {{ formatPrice(getQuote(item.stock_code)!.price) }}
+            </span>
+            <span :class="['item-change', getQuote(item.stock_code)!.change_pct > 0 ? 'up' : 'down']">
+              {{ formatChange(getQuote(item.stock_code)!.change_pct) }}
+            </span>
+          </div>
+          <button class="star-btn star-btn--active" @click.stop="onToggleSpecialWatch(item.id, false)" title="取消特别关注">★</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 自选股列表 -->
     <div class="section">
-      <div class="section-header">
+      <div class="section-header" @click="collapsedWatchlist = !collapsedWatchlist">
+        <button class="collapse-btn">{{ collapsedWatchlist ? '▸' : '▾' }}</button>
         <span class="section-title">自选股</span>
         <span class="section-count">{{ watchlistStore.items.length }}</span>
       </div>
-      <div v-if="watchlistStore.loading" class="loading">加载中...</div>
+      <div v-if="collapsedWatchlist"></div>
+      <div v-else-if="watchlistStore.loading" class="loading">加载中...</div>
       <div v-else-if="watchlistStore.items.length" class="watchlist-items">
         <div
           v-for="item in watchlistStore.items"
@@ -63,6 +99,11 @@
               {{ formatChange(getQuote(item.stock_code)!.change_pct) }}
             </span>
           </div>
+          <button
+            :class="['star-btn', { 'star-btn--active': item.is_special_watch }]"
+            @click.stop="onToggleSpecialWatch(item.id, !item.is_special_watch)"
+            :title="item.is_special_watch ? '取消特别关注' : '加入特别关注'"
+          >{{ item.is_special_watch ? '★' : '☆' }}</button>
           <button class="remove-btn" @click.stop="onRemoveFromWatchlist(item.id)">✕</button>
         </div>
       </div>
@@ -71,8 +112,8 @@
 
     <!-- 各分组 -->
     <div v-for="g in groupStore.groups" :key="g.id" class="section group-section">
-      <div class="section-header" :style="{ borderLeftColor: g.color }">
-        <button class="collapse-btn" @click="toggleCollapse(g.id)">
+      <div class="section-header" :style="{ borderLeftColor: g.color }" @click="toggleCollapse(g.id)">
+        <button class="collapse-btn">
           {{ collapsed[g.id] ? '▸' : '▾' }}
         </button>
         <span class="color-dot" :style="{ background: g.color }"></span>
@@ -168,6 +209,8 @@ const stockStore = useStockStore()
 
 const currentCode = ref(stockStore.currentCode)
 const collapsed = reactive<Record<number, boolean>>({})
+const collapsedSpecial = ref(false)
+const collapsedWatchlist = ref(false)
 
 // 新建分组状态
 const showNewGroup = ref(false)
@@ -217,6 +260,27 @@ async function addToWatchlist() {
   searchResult.value = null
 }
 
+async function addToSpecialWatch() {
+  if (!searchResult.value) return
+  const existing = watchlistStore.items.find(
+    i => i.stock_code === searchResult.value!.stock_code
+  )
+  if (!existing) {
+    await watchlistStore.add({
+      stock_code: searchResult.value.stock_code,
+      stock_name: searchResult.value.stock_name,
+      market: searchResult.value.market,
+    })
+  }
+  // Find the item (just added or existing) and mark as special watch
+  const item = watchlistStore.items.find(i => i.stock_code === searchResult.value!.stock_code)
+  if (item && !item.is_special_watch) {
+    await watchlistStore.toggleSpecialWatch(item.id, true)
+  }
+  showGroupPicker.value = false
+  searchResult.value = null
+}
+
 async function addToGroup(groupId: number) {
   if (!searchResult.value) return
   // 先确保在自选股中
@@ -253,6 +317,10 @@ function onSelectStock(item: WatchlistItem) {
 
 async function onRemoveFromWatchlist(id: number) {
   await watchlistStore.remove(id)
+}
+
+async function onToggleSpecialWatch(id: number, value: boolean) {
+  await watchlistStore.toggleSpecialWatch(id, value)
 }
 
 // ── 分组操作 ──
@@ -349,6 +417,8 @@ async function onCreateGroup() {
   padding: var(--spacing-sm) var(--spacing-md);
   border-left: 3px solid var(--stock-up);
   background: var(--bg-hover);
+  cursor: pointer;
+  user-select: none;
 }
 
 .group-section .section-header {
@@ -523,6 +593,45 @@ async function onCreateGroup() {
 
 .remove-btn:hover {
   color: var(--stock-up);
+}
+
+/* ── 特别关注 ── */
+
+.special-watch-section {
+  background: var(--bg-primary);
+}
+
+.section-header--special {
+  border-left-color: #fac858;
+  background: rgba(250, 200, 88, 0.08);
+}
+
+.section-header--special .section-title {
+  color: #d4a017;
+}
+
+.star-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  color: var(--text-muted);
+  padding: 2px 4px;
+  transition: color 0.2s;
+}
+
+.star-btn:hover {
+  color: #fac858;
+}
+
+.star-btn--active {
+  color: #fac858;
+}
+
+.picker-btn--special {
+  border-left: 3px solid #fac858;
+  color: #d4a017;
+  font-weight: bold;
 }
 
 /* ── 编辑分组 ── */

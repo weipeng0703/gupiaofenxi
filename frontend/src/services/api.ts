@@ -30,7 +30,7 @@ export const watchlistApi = {
   add: (data: { stock_code: string; stock_name: string; market?: string; notes?: string }) =>
     api.post('/watchlist', data),
   remove: (id: number) => api.delete(`/watchlist/${id}`),
-  update: (id: number, data: { notes?: string; is_active?: boolean }) =>
+  update: (id: number, data: { notes?: string; is_active?: boolean; is_special_watch?: boolean }) =>
     api.patch(`/watchlist/${id}`, data),
 }
 
@@ -40,6 +40,9 @@ export const signalsApi = {
     api.get('/signals', { params }),
   get: (id: number) => api.get(`/signals/${id}`),
   markRead: (id: number) => api.patch(`/signals/${id}/read`),
+  generateTest: (stockCode: string, count?: number) =>
+    api.post(`/signals/test/${stockCode}`, null, { params: { count: count || 5 } }),
+  generateSpecialWatchTest: () => api.post('/signals/test/special-watch'),
 }
 
 // 策略 API

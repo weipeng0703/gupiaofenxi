@@ -63,6 +63,7 @@ export interface WatchlistItem {
   added_at: string
   is_active: boolean
   notes: string
+  is_special_watch: boolean
 }
 
 export interface WatchlistAdd {
@@ -75,6 +76,7 @@ export interface WatchlistAdd {
 export interface SignalItem {
   id: number
   stock_code: string
+  stock_name: string
   strategy_name: string
   signal_type: 'BUY' | 'SELL'
   confidence: number

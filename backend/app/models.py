@@ -17,6 +17,7 @@ class Watchlist(Base):
     added_at = Column(String, nullable=False, default="now")
     is_active = Column(Boolean, nullable=False, default=True)
     notes = Column(Text, default="")
+    is_special_watch = Column(Integer, nullable=False, default=0)
 
 
 class Strategy(Base):

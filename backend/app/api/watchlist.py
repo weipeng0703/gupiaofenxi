@@ -19,6 +19,7 @@ async def list_watchlist(db: AsyncSession = Depends(get_db)):
     return [WatchlistItem(
         id=i.id, stock_code=i.stock_code, stock_name=i.stock_name,
         market=i.market, added_at=i.added_at, is_active=i.is_active, notes=i.notes,
+        is_special_watch=bool(i.is_special_watch),
     ) for i in items]
 
 
@@ -42,6 +43,7 @@ async def add_to_watchlist(item: WatchlistAdd, db: AsyncSession = Depends(get_db
         return WatchlistItem(
             id=existing.id, stock_code=existing.stock_code, stock_name=existing.stock_name,
             market=existing.market, added_at=existing.added_at, is_active=existing.is_active, notes=existing.notes,
+            is_special_watch=bool(existing.is_special_watch),
         )
 
     new_item = Watchlist(
@@ -56,6 +58,7 @@ async def add_to_watchlist(item: WatchlistAdd, db: AsyncSession = Depends(get_db
     return WatchlistItem(
         id=new_item.id, stock_code=new_item.stock_code, stock_name=new_item.stock_name,
         market=new_item.market, added_at=new_item.added_at, is_active=new_item.is_active, notes=new_item.notes,
+        is_special_watch=bool(new_item.is_special_watch),
     )
 
 
@@ -86,9 +89,12 @@ async def update_watchlist(id: int, update: WatchlistUpdate, db: AsyncSession = 
         item.notes = update.notes
     if update.is_active is not None:
         item.is_active = update.is_active
+    if update.is_special_watch is not None:
+        item.is_special_watch = int(update.is_special_watch)
     await db.commit()
     await db.refresh(item)
     return WatchlistItem(
         id=item.id, stock_code=item.stock_code, stock_name=item.stock_name,
         market=item.market, added_at=item.added_at, is_active=item.is_active, notes=item.notes,
+        is_special_watch=bool(item.is_special_watch),
     )

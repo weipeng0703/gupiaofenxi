@@ -67,17 +67,20 @@ class WatchlistItem(BaseModel):
     added_at: str
     is_active: bool
     notes: str
+    is_special_watch: bool = False
 
 
 class WatchlistUpdate(BaseModel):
     notes: str | None = None
     is_active: bool | None = None
+    is_special_watch: bool | None = None
 
 
 # ─── 信号 ───
 class SignalItem(BaseModel):
     id: int
     stock_code: str
+    stock_name: str = ""
     strategy_name: str
     signal_type: str            # "BUY" / "SELL"
     confidence: float

@@ -130,6 +130,8 @@ class RealtimePushService:
 
                 # 推送新信号
                 for signal in signals:
+                    signal["stock_name"] = quote.get("stock_name", "")
+
                     # WebSocket 推送
                     signal_msg = make_signal_alert(signal)
                     from app.ws.handler import manager
